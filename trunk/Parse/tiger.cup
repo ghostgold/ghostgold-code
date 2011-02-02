@@ -1,0 +1,263 @@
+// CUP specification for a simple expression evaluator (w/ actions)
+package Parse;
+//import java_cup.runtime.*;
+
+/* Preliminaries to set up and use the scanner.  */
+/*init with {: lexer = new Lexer()              :};*/
+/*scan with {: return scanner.next_token(); :};*/
+
+/* Terminals (tokens returned by the scanner). */
+terminal   FUNCTION ,GT ,DIVIDE ,COLON ,ELSE ,OR ,NIL ,DO ,GE  ,LT ,OF ,MINUS ,ARRAY ,TYPE ,FOR ,TO ,TIMES ,COMMA ,LE ,IN ,END ,ASSIGN ,DOT ,LPAREN ,RPAREN ,IF ,SEMICOLON  ,WHILE ,LBRACK ,RBRACK ,NEQ ,VAR ,BREAK ,AND ,PLUS ,LBRACE ,RBRACE ,LET ,THEN ,EQ,UMINUS;
+
+terminal Integer   INT;
+terminal String	   STRING,ID;
+
+/* Non-terminals */
+non terminal Absyn.Exp expr;
+non terminal Absyn.ExpList exprseq,exprlist;
+non terminal Absyn.FieldExpList fieldlist;
+non terminal Absyn.Var lvalue;
+non terminal Absyn.DecList declarationlist;
+non terminal Absyn.Dec declaration,typedeclaration,variabledeclaration,functiondeclaration;
+non terminal Absyn.Ty type;
+non terminal Absyn.FieldList typefields;
+/*non terminal Integer    expr;*/
+
+/* Precedences */
+precedence nonassoc ASSIGN;
+precedence left OR;
+precedence left AND;
+precedence nonassoc EQ,NEQ,GT,LT,GE,LE;
+precedence left PLUS, MINUS;
+precedence left TIMES, DIVIDE;
+precedence left UMINUS;
+
+
+/* The grammar */
+start with expr;
+
+expr   ::=STRING:str0
+	   {: RESULT = new Absyn.StringExp(str0left,str0); :}
+	   |
+	   INT:num0
+	   {: RESULT = new Absyn.IntExp(num0left,num0.intValue()); :}
+	   |
+	   NIL:nil0
+	   {: RESULT = new Absyn.NilExp(nil0left); :}
+	   |
+	   lvalue:var0
+	   {: RESULT = new Absyn.VarExp(var0.pos,var0); :}
+	   |
+	   MINUS:op0 expr:exp0 
+ 	   {: RESULT = new Absyn.OpExp(op0left,new Absyn.IntExp(op0left,0),Absyn.OpExp.MINUS,exp0); :} %prec UMINUS
+	   |
+	   expr:exp1 PLUS:op0 expr:exp2
+	   {: RESULT = new Absyn.OpExp(op0left,exp1,Absyn.OpExp.PLUS,exp2); :}
+	   |
+	   expr:exp1 MINUS:op0 expr:exp2
+	   {: RESULT = new Absyn.OpExp(op0left, exp1, Absyn.OpExp.MINUS, exp2); :}
+	   |
+	   expr:exp1 TIMES:op0 expr:exp2
+	   {: RESULT = new Absyn.OpExp(op0left,exp1,Absyn.OpExp.MUL,exp2); :}
+	   |
+	   expr:exp1 DIVIDE:op0 expr:exp2
+	   {: RESULT = new Absyn.OpExp(op0left,exp1,Absyn.OpExp.DIV,exp2); :}
+	   |
+	   expr:exp1 EQ:op0 expr:exp2
+	   {: RESULT = new Absyn.OpExp(op0left,exp1,Absyn.OpExp.EQ,exp2); :}
+	   |
+	   expr:exp1 NEQ:op0 expr:exp2
+	   {: RESULT = new Absyn.OpExp(op0left,exp1,Absyn.OpExp.NE,exp2); :}
+	   |
+	   expr:exp1 LT:op0 expr:exp2
+	   {: RESULT = new Absyn.OpExp(op0left,exp1,Absyn.OpExp.LT,exp2); :}
+	   |
+	   expr:exp1 GT:op0 expr:exp2
+	   {: RESULT = new Absyn.OpExp(op0left,exp1,Absyn.OpExp.GT,exp2); :}
+	   |
+	   expr:exp1 LE:op0 expr:exp2
+	   {: RESULT = new Absyn.OpExp(op0left,exp1,Absyn.OpExp.LE,exp2); :}
+	   |
+	   expr:exp1 GE:op0 expr:exp2
+	   {: RESULT = new Absyn.OpExp(op0left,exp1,Absyn.OpExp.GE,exp2); :}
+	   |
+	   expr:exp1 AND:op0 expr:exp2
+	   {: RESULT = new Absyn.IfExp(op0left,exp1,exp2,new Absyn.IntExp(op0left,0)); :}
+	   |
+	   expr:exp1 OR:op0 expr:exp2
+	   {: RESULT = new Absyn.IfExp(op0left,exp1,new Absyn.IntExp(op0left,1),exp2); :}
+	   |
+	   lvalue:var0 ASSIGN:op0 expr:exp0
+	   {: RESULT = new Absyn.AssignExp(op0left,var0,exp0); :}
+	   |
+	   ID:id0 LPAREN RPAREN
+	   {: RESULT = new Absyn.CallExp(id0left,Symbol.Symbol.symbol(id0),null); :}
+	   |
+	   ID:id0 LPAREN exprlist:args0 RPAREN
+	   {: RESULT = new Absyn.CallExp(id0left,Symbol.Symbol.symbol(id0),args0); :}
+	   |
+	   LPAREN:paren0 RPAREN
+	   {: RESULT = new Absyn.SeqExp(paren0left,null); :}
+	   |
+	   LPAREN:paren0 exprseq:list0 RPAREN
+	   {: RESULT = new Absyn.SeqExp(paren0left,list0); :}
+	   |
+	   ID:id0 LBRACE RBRACE
+	   {: RESULT = new Absyn.RecordExp(id0left,Symbol.Symbol.symbol(id0),null); :}
+	   |
+	   ID:id0 LBRACE fieldlist:list0 RBRACE
+	   {: RESULT = new Absyn.RecordExp(id0left,Symbol.Symbol.symbol(id0),list0); :}
+	   |
+	   ID:id0 LBRACK expr:exp1 RBRACK OF expr:exp2
+	   {: RESULT = new Absyn.ArrayExp(id0left,Symbol.Symbol.symbol(id0),exp1,exp2); :}
+	   |
+	   IF:if0 expr:exp1 THEN expr:exp2
+	   {: RESULT = new Absyn.IfExp(if0left,exp1,exp2); :}
+	   |
+	   IF:if0 expr:exp1 THEN expr:exp2 ELSE expr:exp3
+	   {: RESULT = new Absyn.IfExp(if0left,exp1,exp2,exp3); :}
+	   |
+	   WHILE:while0 expr:exp1 DO expr:exp2
+	   {: RESULT = new Absyn.WhileExp(while0left,exp1,exp2); :}
+	   |
+	   FOR:for0 ID:id0 ASSIGN:assign0 expr:exp1 TO expr:exp2 DO expr:exp3
+	   {: RESULT = new Absyn.ForExp(for0left,
+	   			  	  new Absyn.VarDec(assign0left, Symbol.Symbol.symbol(id0),null,exp1),
+					  exp2,exp3); :}
+	   |
+	   BREAK:break0
+	   {: RESULT = new Absyn.BreakExp(break0left); :}
+	   |
+	   LET:let0 declarationlist:declist0 IN END
+	   {: RESULT = new Absyn.LetExp(let0left,declist0,null); :}
+	   |
+	   LET:let0 declarationlist:declist0 IN exprseq:explist0 END
+	   {: RESULT = new Absyn.LetExp(let0left,declist0,explist0); :}
+	   ;
+
+exprseq::=expr:exp0
+		{: RESULT = new Absyn.ExpList(exp0,null); :}
+		|
+		exprseq:explist0 SEMICOLON expr:exp0
+		{: explist0.append(exp0);RESULT = explist0; :}
+		;
+
+exprlist::=expr:exp0
+		{: RESULT = new Absyn.ExpList(exp0,null); :}
+		|
+		exprlist:explist0 COMMA expr:exp0
+		{: explist0.append(exp0);RESULT = explist0; :}
+		;
+
+fieldlist::=ID:id0 EQ:eq0 expr:exp0
+				   {: RESULT = new Absyn.FieldExpList(eq0left,
+				   			Symbol.Symbol.symbol(id0),
+				   			exp0,null); :}
+				|
+				fieldlist:fieldexplist0 COMMA ID:id0 EQ:eq0 expr:exp0
+				{: fieldexplist0.append(new Absyn.FieldExpList(eq0left,
+				   			Symbol.Symbol.symbol(id0),
+				   			exp0,null));
+				 RESULT = fieldexplist0; :}
+				;
+
+lvalue::=ID:id0
+		{: RESULT = new Absyn.SimpleVar(id0left,Symbol.Symbol.symbol(id0)); :}
+		|
+		lvalue:var0 DOT:dot0 ID:id0
+		{: RESULT = new Absyn.FieldVar(dot0left,var0,Symbol.Symbol.symbol(id0)); :}
+		|
+		lvalue:var0 LBRACK expr:exp0 RBRACK
+		{: RESULT = new Absyn.SubscriptVar(var0.pos,var0,exp0); :}
+		|
+		ID:id0 LBRACK expr:exp0 RBRACK
+		{: RESULT = new Absyn.SubscriptVar(id0left,
+						new Absyn.SimpleVar(id0left,Symbol.Symbol.symbol(id0)),
+						exp0); :}
+		;
+
+
+declarationlist::=declaration:dec0
+		{: RESULT = new Absyn.DecList(dec0,null); :}
+		|
+		declarationlist:declist0 declaration:dec0
+		{: declist0.append(dec0);RESULT = declist0; :}
+		;
+
+declaration::=typedeclaration:dec0
+		{: RESULT = dec0; :}
+		|
+		variabledeclaration:dec0
+		{: RESULT = dec0; :}
+		|
+		functiondeclaration:dec0
+		{: RESULT = dec0; :}
+		;
+
+typedeclaration::=TYPE ID:id0 EQ:eq0 type:type0
+					   {: RESULT = new Absyn.TypeDec(eq0left,
+					   			Symbol.Symbol.symbol(id0),type0,null); :};
+
+type::=ID:id0
+		{: RESULT = new Absyn.NameTy(id0left,Symbol.Symbol.symbol(id0)); :}
+		|
+		LBRACE:lbrace0 RBRACE
+		{: RESULT = new Absyn.RecordTy(lbrace0left,null); :}
+		|
+		LBRACE:lbrace0 typefields:fieldlist0 RBRACE
+		{: RESULT = new Absyn.RecordTy(lbrace0left,fieldlist0); :}
+		|
+		ARRAY:array0 OF ID:id0
+		{: RESULT = new Absyn.ArrayTy(array0left,Symbol.Symbol.symbol(id0)); :}
+		;	
+
+typefields::=ID:id1 COLON:colon0 ID:id2
+		{: RESULT = new Absyn.FieldList(colon0left,
+				   Symbol.Symbol.symbol(id1),
+				   Symbol.Symbol.symbol(id2),null); :}
+		|
+		typefields:fieldlist0 COMMA ID:id1 COLON:colon0 ID:id2
+		{: fieldlist0.append(new Absyn.FieldList(colon0left,
+				   Symbol.Symbol.symbol(id1),
+				   Symbol.Symbol.symbol(id2),null));
+		RESULT = fieldlist0; :}
+		;
+
+
+
+
+variabledeclaration::=VAR ID:id0 ASSIGN:assign0 expr:exp0
+						  {: RESULT = new Absyn.VarDec(assign0left,
+						  		   Symbol.Symbol.symbol(id0),null,exp0); :}
+						   |
+						   VAR ID:id1 COLON ID:id2 ASSIGN:assign0 expr:exp0
+						   {: RESULT = new Absyn.VarDec(assign0left,
+						   			Symbol.Symbol.symbol(id1),
+									new Absyn.NameTy(id2left,Symbol.Symbol.symbol(id2)),
+									exp0); :}
+						   ;
+
+functiondeclaration::=FUNCTION:function0 ID:id0 LPAREN RPAREN EQ expr:exp0
+					{: RESULT = new Absyn.FunctionDec(function0left,
+							 Symbol.Symbol.symbol(id0),null,null,exp0,null); :}
+					|
+					FUNCTION:function0 ID:id0 LPAREN typefields:fieldlist0 RPAREN EQ expr:exp0
+					{: RESULT = new Absyn.FunctionDec(function0left,
+							 Symbol.Symbol.symbol(id0),fieldlist0,null,exp0,null); :}
+
+					|
+					FUNCTION:function0 ID:id1 LPAREN RPAREN COLON ID:id2 EQ expr:exp0
+					{: RESULT = new Absyn.FunctionDec(function0left,
+							 Symbol.Symbol.symbol(id1),null,
+							 new Absyn.NameTy(id2left,Symbol.Symbol.symbol(id2)),
+							 exp0,null); :}
+					
+					|
+					FUNCTION:function0 ID:id1 LPAREN typefields:fieldlist0 RPAREN COLON ID:id2 EQ expr:exp0
+					{: RESULT = new Absyn.FunctionDec(function0left,
+							 Symbol.Symbol.symbol(id1),fieldlist0,
+							 new Absyn.NameTy(id2left,Symbol.Symbol.symbol(id2)),
+							 exp0,null); :}
+					
+					;
+	   							
