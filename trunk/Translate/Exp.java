@@ -1,2 +1,2 @@
 package Translate;
-abstract class Exp{}
+public abstract class Exp{}
