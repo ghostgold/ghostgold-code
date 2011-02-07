@@ -9,9 +9,12 @@ public class Semant
 	public static final Types.VOID VOID = new Types.VOID();
 	public static final Types.RECORD UNKNOWN = new Types.RECORD(null, null, null);
 	public boolean semantError;
+	public Symbol.Symbol BREAK;
 	public Semant(ErrorMsg.ErrorMsg err){
 		this(new Env(err));
 		semantError = false;
+		BREAK = Symbol.Symbol.symbol("break");
+		env.tenv.put(BREAK, INT);
 	}
 	public Semant(Env e){env = e;}
 	
@@ -346,7 +349,10 @@ public class Semant
 		ExpTy test = transExp(e.test);
 		if(!test.ty.coerceTo(INT))
 			error(e.pos, "integer required");
+		env.tenv.beginScope();
+		env.tenv.put(BREAK, STRING);
 		ExpTy body = transExp(e.body);
+		env.tenv.endScope();
 		if(!body.ty.coerceTo(VOID))
 			error(e.pos, "no value should be produced by the body of a while loop");
 		return new ExpTy(null, VOID);
@@ -362,13 +368,19 @@ public class Semant
 		if(!ty.coerceTo(INT)){
 			error(e.pos, "lower bound should be integer");
 		}
+		env.tenv.beginScope();
+		env.tenv.put(BREAK, STRING);
 		ExpTy body = transExp(e.body);
 		env.venv.endScope();
+		env.tenv.endScope();
 		if(!body.ty.coerceTo(VOID))
 			error(e.pos, "no value should be produced by the body of a while loop");
 		return new ExpTy(null, VOID);
 	}
 	ExpTy transExp(Absyn.BreakExp e){
+		Types.Type b = (Types.Type)(env.venv.get(BREAK));
+		if(b.coerceTo(INT))
+			error(e.pos, "break must be in a loop");
 		return new ExpTy(null, VOID);
 	}
 	ExpTy transExp(Absyn.LetExp e){
@@ -448,11 +460,14 @@ public class Semant
 		}
 		for(Absyn.FunctionDec p = e; p != null; p = p.next){
 			env.venv.beginScope();
+			env.tenv.beginScope();
+			env.tenv.put(BREAK, INT);
 			for(Absyn.FieldList q = p.params; q != null; q = q.tail){
 				env.venv.put(q.name, new VarEntry((Types.Type)(env.tenv.get(q.typ))));
 			}
 			transExp(p.body);
 			env.venv.endScope();
+			env.tenv.endScope();
 		}
 		return null;
 	}
