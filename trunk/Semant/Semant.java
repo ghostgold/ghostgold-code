@@ -378,7 +378,7 @@ public class Semant
 		return new ExpTy(null, VOID);
 	}
 	ExpTy transExp(Absyn.BreakExp e){
-		Types.Type b = (Types.Type)(env.venv.get(BREAK));
+		Types.Type b = (Types.Type)(env.venv.get(BREAK);
 		if(b.coerceTo(INT))
 			error(e.pos, "break must be in a loop");
 		return new ExpTy(null, VOID);
