@@ -4,6 +4,7 @@ public class Semant
 {
 	Env env;
 	public static final Types.INT INT = new Types.INT();
+	public static final Types.INT INDEX = new Types.INT();
 	public static final Types.NIL NIL = new Types.NIL();
 	public static final Types.STRING STRING = new Types.STRING();
 	public static final Types.VOID VOID = new Types.VOID();
@@ -68,7 +69,7 @@ public class Semant
 			return new ExpTy(null, ent.ty);
 		}
 		else {
-			error(e.pos, "undefined variable");
+			error(e.pos, "undefined variable " + e.name);
 			return new ExpTy(null, UNKNOWN);
 		}
 	}
@@ -80,7 +81,7 @@ public class Semant
 			if(f != null)
 				return new ExpTy(null,f);
 			else {
-				error(e.pos, "The record do not have a field with name" + e.field.toString());
+				error(e.pos, "The record do not have a field with name " + e.field.toString());
 				return new ExpTy(null,UNKNOWN);
 			}
 		}
@@ -140,30 +141,30 @@ public class Semant
 	}
 	ExpTy transExp(Absyn.CallExp e){
 		Entry x = (Entry)env.venv.get(e.func);
-		if(x instanceof FunEntry){
+		if( x instanceof FunEntry){
 			FunEntry f = (FunEntry)x;
 			Types.RECORD r = f.formals;
 			Absyn.ExpList args = e.args;
 			while(args != null && r != null){
 				ExpTy arg = transExp(args.head);
 				if(!arg.ty.coerceTo(r.fieldType))
-					error(args.head.pos, "The type of argment is different from the declaration");
+					error(args.head.pos, "The type of actual argment is different from the formal ones");
 				args = args.tail;
 				r = r.tail;
 			}
 			if(args == null && r == null)
 				return new ExpTy(null, f.result);
 			else if(args != null){
-				error(e.pos, "Too many argments");
+				error(e.pos, "Too many actual argments");
 				return new ExpTy(null, f.result);
 			}
 			else if(r != null){
-				error(e.pos, "The argments is not enough");
+				error(e.pos, "The actual argments is not enough");
 				return new ExpTy(null, f.result);
 			}
 		}
 		else 
-			error(e.pos, e.func.toString() + "not a function");
+			error(e.pos, "undefined function "+e.func.toString());
 		return new ExpTy(null, UNKNOWN);
 	}
 	ExpTy transExp(Absyn.OpExp e){
@@ -222,14 +223,9 @@ public class Semant
 			else if((left.ty.coerceTo(right.ty) || right.ty.coerceTo(left.ty)) 
 					&& !(left.ty.coerceTo(NIL) && right.ty.coerceTo(NIL)))
 				return new ExpTy(null, INT);
-			else if(!(left.ty.coerceTo(INT) || left.ty.coerceTo(STRING))){
-				error(e.left.pos, "integer or string required");
-				return new ExpTy(null, INT);
-			}
-			else if(!(right.ty.coerceTo(INT) || right.ty.coerceTo(STRING))){
-				error(e.right.pos, "integer required");
-			}
-			break;
+			else error(e.pos, "compare between different type");
+			return new ExpTy(null, INT);
+
 		case Absyn.OpExp.NE:
 			if(left.ty.coerceTo(INT) && right.ty.coerceTo(INT))
 				return new ExpTy(null, INT);
@@ -238,80 +234,75 @@ public class Semant
 			else if(left.ty.coerceTo(right.ty) || right.ty.coerceTo(left.ty)
 					&& !(left.ty.coerceTo(NIL) && right.ty.coerceTo(NIL)))
 				return new ExpTy(null, INT);
-			else if(!(left.ty.coerceTo(INT) || left.ty.coerceTo(STRING))){
-				error(e.left.pos, "integer or string required");
-				return new ExpTy(null, INT);
-			}
-			else if(!(right.ty.coerceTo(INT) || right.ty.coerceTo(STRING))){
-				error(e.right.pos, "integer required");
-			}
-			break;
+			else error(e.pos, "compare between different type");
+			return new ExpTy(null, INT);
+
 		case Absyn.OpExp.LT:
 			if(left.ty.coerceTo(INT) && right.ty.coerceTo(INT))
 				return new ExpTy(null, INT);
 			else if(left.ty.coerceTo(STRING) && right.ty.coerceTo(STRING))
 				return new ExpTy(null, INT);
-			else if(!(left.ty.coerceTo(INT) || left.ty.coerceTo(STRING))){
+			else if(!(left.ty.coerceTo(INT) || left.ty.coerceTo(STRING)))
 				error(e.left.pos, "integer or string required");
-				return new ExpTy(null, INT);
-			}
-			else if(!(right.ty.coerceTo(INT) || right.ty.coerceTo(STRING))){
-				error(e.right.pos, "integer required");
-			}
-			break;
+			else if(!(right.ty.coerceTo(INT) || right.ty.coerceTo(STRING)))
+				error(e.right.pos, "integer or string required");
+			else 
+				error(e.pos, "compare between different type");
+			return new ExpTy(null, INT);
+
 		case Absyn.OpExp.LE:
 			if(left.ty.coerceTo(INT) && right.ty.coerceTo(INT))
 				return new ExpTy(null, INT);
 			else if(left.ty.coerceTo(STRING) && right.ty.coerceTo(STRING))
 				return new ExpTy(null, INT);
-			else if(!(left.ty.coerceTo(INT) || left.ty.coerceTo(STRING))){
+			else if(!(left.ty.coerceTo(INT) || left.ty.coerceTo(STRING)))
 				error(e.left.pos, "integer or string required");
-				return new ExpTy(null, INT);
-			}
-			else if(!(right.ty.coerceTo(INT) || right.ty.coerceTo(STRING))){
-				error(e.right.pos, "integer required");
-			}
-			break;
+			else if(!(right.ty.coerceTo(INT) || right.ty.coerceTo(STRING)))
+				error(e.right.pos, "integer or string required");
+			else 
+				error(e.pos, "compare between different type");
+			return new ExpTy(null, INT);
+
 		case Absyn.OpExp.GT:
 			if(left.ty.coerceTo(INT) && right.ty.coerceTo(INT))
 				return new ExpTy(null, INT);
 			else if(left.ty.coerceTo(STRING) && right.ty.coerceTo(STRING))
 				return new ExpTy(null, INT);
-			else if(!(left.ty.coerceTo(INT) || left.ty.coerceTo(STRING))){
+			else if(!(left.ty.coerceTo(INT) || left.ty.coerceTo(STRING)))
 				error(e.left.pos, "integer or string required");
-				return new ExpTy(null, INT);
-			}
-			else if(!(right.ty.coerceTo(INT) || right.ty.coerceTo(STRING))){
-				error(e.right.pos, "integer required");
-			}
-			break;
+			else if(!(right.ty.coerceTo(INT) || right.ty.coerceTo(STRING)))
+				error(e.right.pos, "integer or string required");
+			else 
+				error(e.pos, "compare between different type");
+			return new ExpTy(null, INT);
+
 		case Absyn.OpExp.GE:
 			if(left.ty.coerceTo(INT) && right.ty.coerceTo(INT))
 				return new ExpTy(null, INT);
 			else if(left.ty.coerceTo(STRING) && right.ty.coerceTo(STRING))
 				return new ExpTy(null, INT);
-			else if(!(left.ty.coerceTo(INT) || left.ty.coerceTo(STRING))){
+			else if(!(left.ty.coerceTo(INT) || left.ty.coerceTo(STRING)))
 				error(e.left.pos, "integer or string required");
-				return new ExpTy(null, INT);
-			}
-			else if(!(right.ty.coerceTo(INT) || right.ty.coerceTo(STRING))){
-				error(e.right.pos, "integer required");
-			}
-			break;
+			else if(!(right.ty.coerceTo(INT) || right.ty.coerceTo(STRING)))
+				error(e.right.pos, "integer or string required");
+			else 
+				error(e.pos, "compare between different type");
+			return new ExpTy(null, INT);
+
 		default:
 			return new ExpTy(null, INT);
 		}
 		return new ExpTy(null, INT);
 	}
 	ExpTy transExp(Absyn.RecordExp e){
-		Types.Type typ = (Types.Type)env.tenv.get(e.typ);
-		if(typ.actual() instanceof Types.RECORD){
+		Types.Type typ = (Types.Type)(env.tenv.get(e.typ));
+		if(typ != null && typ.actual() instanceof Types.RECORD){
 			Absyn.FieldExpList f = e.fields;
 			Types.RECORD save = (Types.RECORD)(typ.actual());
 			Types.RECORD r = save;
 			while(f != null && r != null){
 				if(f.name != r.fieldName){
-					error(f.pos, "record " + e.typ.toString() + " has no field with name" 
+					error(f.pos, "record " + e.typ.toString() + " has no field with name " 
 						  + f.name.toString());
 				}
 				ExpTy init = transExp(f.init);
@@ -347,9 +338,12 @@ public class Semant
 	ExpTy transExp(Absyn.AssignExp e){
 		ExpTy var = transVar(e.var);
 		ExpTy exp = transExp(e.exp);
+		if(var.ty == INDEX){
+			error(e.pos, "index varialbe can not be assign a value");
+		}
 		if(exp.ty.coerceTo(var.ty))return new ExpTy(null, VOID);
 		else {
-			error(e.pos, "assignment can not be proceeded");
+			error(e.pos, "assignment to variable a exp with different type");
 			return new ExpTy(null, VOID);
 		}
 	}
@@ -372,6 +366,8 @@ public class Semant
 			}
 		}
 		else {
+			if(!thenclause.ty.coerceTo(VOID))
+				error(e.pos, "if-then should return no value");
 			return new ExpTy(null, VOID);
 		}
 	}
@@ -393,11 +389,11 @@ public class Semant
 			error(e.pos, "upper bound should be integer");
 		}
 		env.venv.beginScope();
-		Exp var = transDec(e.var);
-		Types.Type ty = ((VarEntry)(env.venv.get(e.var.name))).ty;
-		if(!ty.coerceTo(INT)){
+		ExpTy init = transExp(e.var.init);
+		if(!init.ty.coerceTo(INT)){
 			error(e.pos, "lower bound should be integer");
 		}
+		env.venv.put(e.var.name, new VarEntry(INDEX));
 		env.tenv.beginScope();
 		env.tenv.put(BREAK, STRING);
 		ExpTy body = transExp(e.body);
@@ -425,18 +421,20 @@ public class Semant
 	}
 	ExpTy transExp(Absyn.ArrayExp e){
 		Types.Type ty = (Types.Type)(env.tenv.get(e.typ));
-		if(!(ty.actual() instanceof Types.ARRAY))
-			error(e.pos, "type should be an array type");
-		else {
+		if(ty != null && ty.actual() instanceof Types.ARRAY){
 			ExpTy size = transExp(e.size);
 			if(!size.ty.coerceTo(INT))
 				error(e.pos, "size should be an integer");
 			ExpTy init = transExp(e.init);
-			if(!init.ty.coerceTo(((Types.ARRAY)ty).element))
+			if(!init.ty.coerceTo(((Types.ARRAY)ty.actual()).element))
 				error(e.pos, 
 					  "the type of initial value is different from the type of array elements");
+			return new ExpTy(null, ty);
 		}
-		return new ExpTy(null, ty);
+		else{
+			error(e.pos, "type should be an array type");
+			return new ExpTy(null, UNKNOWN);
+		}
 	}
 	Exp transDec(Absyn.Dec e){
 		if(e instanceof Absyn.VarDec)return transDec((Absyn.VarDec)e);
@@ -449,13 +447,13 @@ public class Semant
 		if(e.typ == null){
 			if(init.ty.coerceTo(NIL))
 				error(e.pos, "type must be given for nil");
-			else env.venv.put(e.name, new VarEntry(transExp(e.init).ty));
+			else env.venv.put(e.name, new VarEntry(init.ty));
 		}
 		else {
-		
 			Types.Type ty = transTy(e.typ);
 			if(!init.ty.coerceTo(ty))
 				error(e.pos, "type of initial value is different with the type in declaration");
+			env.venv.put(e.name, new VarEntry(ty));
 		}
 		return null;
 	}
@@ -495,7 +493,9 @@ public class Semant
 			for(Absyn.FieldList q = p.params; q != null; q = q.tail){
 				env.venv.put(q.name, new VarEntry((Types.Type)(env.tenv.get(q.typ))));
 			}
-			transExp(p.body);
+			ExpTy body = transExp(p.body);
+			if(!body.ty.coerceTo(transTy(p.result)))
+				error(p.pos, "return type of " + p.name + " different from declaration");
 			env.venv.endScope();
 			env.tenv.endScope();
 		}
@@ -530,10 +530,15 @@ public class Semant
 		if(checkSame(e)){
 			error(e.pos,"same field name in a record");
 		}
-		Types.RECORD r = new Types.RECORD(e.name, (Types.Type)(env.tenv.get(e.typ)), null);
+		Types.Type typ = (Types.Type)(env.tenv.get(e.typ));
+		if(typ == null)
+			error(e.pos, "undefined type " + e.typ.toString());
+		Types.RECORD r = new Types.RECORD(e.name, typ, null);
 		Types.RECORD t = r;
 		for(Absyn.FieldList p = e.tail; p != null; p = p.tail){
-			t.tail = new Types.RECORD(p.name, (Types.Type)(env.tenv.get(p.typ)), null);
+			Types.Type ty = (Types.Type)(env.tenv.get(p.typ));
+			if(ty == null)error(p.pos, "undefined type " + p.typ.toString());
+			t.tail = new Types.RECORD(p.name, ty, null);
 			t = t.tail;
 		}
 		return r;
