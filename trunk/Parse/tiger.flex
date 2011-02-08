@@ -10,7 +10,7 @@ import ErrorMsg.*;
 %line
 %column
 %char
-
+%public
 %{
 	StringBuffer string = new StringBuffer();
 	int stringBegin = 0;

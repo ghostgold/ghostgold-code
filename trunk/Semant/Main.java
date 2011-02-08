@@ -1,8 +1,8 @@
-package Parse;
-
+package Semant;
+import Parse.*;
 public class Main {
 
-	public static void parsermain(String argv[])
+	public static void main(String argv[])
 		throws java.io.IOException, java.lang.Exception{
 		String filename = argv[0];
 		ErrorMsg.ErrorMsg errorSender= new ErrorMsg.ErrorMsg(filename);
@@ -22,6 +22,12 @@ public class Main {
 		Absyn.Exp exp = (Absyn.Exp)(parseTree.value);
 		Absyn.Print printer = new Absyn.Print(System.out);
 		printer.prExp(exp,4);
+		System.out.print("\n");
+		Semant semant = new Semant(errorSender);
+		semant.transProg(exp);
+		if(semant.semantError){
+			System.exit(1);
+		}
 		return ;
 	}
 

@@ -15,6 +15,34 @@ public class Semant
 		semantError = false;
 		BREAK = Symbol.Symbol.symbol("break");
 		env.tenv.put(BREAK, INT);
+		env.tenv.put(Symbol.Symbol.symbol("int"),INT);
+		env.tenv.put(Symbol.Symbol.symbol("string"),STRING);
+		env.venv.put(Symbol.Symbol.symbol("print"), 
+					 new FunEntry(new Types.RECORD(Symbol.Symbol.symbol("s"), STRING, null), VOID));
+		env.venv.put(Symbol.Symbol.symbol("flush"),
+					 new FunEntry(null , VOID));
+		env.venv.put(Symbol.Symbol.symbol("getchar"), 
+					 new FunEntry(null, STRING));
+		env.venv.put(Symbol.Symbol.symbol("ord"), 
+					 new FunEntry(new Types.RECORD(Symbol.Symbol.symbol("s"), STRING, null), INT));
+		env.venv.put(Symbol.Symbol.symbol("chr"), 
+					 new FunEntry(new Types.RECORD(Symbol.Symbol.symbol("i"), INT, null), STRING));
+		env.venv.put(Symbol.Symbol.symbol("size"), 
+					 new FunEntry(new Types.RECORD(Symbol.Symbol.symbol("s"), STRING, null), INT));
+		env.venv.put(Symbol.Symbol.symbol("substring"), 
+					 new FunEntry(new Types.RECORD(Symbol.Symbol.symbol("s"), STRING, 
+								   new Types.RECORD(Symbol.Symbol.symbol("first"), INT, 
+									new Types.RECORD(Symbol.Symbol.symbol("n"), INT, null))),
+								  STRING));
+		env.venv.put(Symbol.Symbol.symbol("concat"), 
+					 new FunEntry(new Types.RECORD(Symbol.Symbol.symbol("s1"), STRING, 
+								   new Types.RECORD(Symbol.Symbol.symbol("s2"), STRING, 
+									null )),
+								  STRING));
+		env.venv.put(Symbol.Symbol.symbol("not"),
+					 new FunEntry(new Types.RECORD(Symbol.Symbol.symbol("i"), INT, null), INT));
+		env.venv.put(Symbol.Symbol.symbol("exit"),
+					 new FunEntry(new Types.RECORD(Symbol.Symbol.symbol("i"), INT, null), VOID));
 	}
 	public Semant(Env e){env = e;}
 	
@@ -47,7 +75,7 @@ public class Semant
 	ExpTy transVar(Absyn.FieldVar e){
 		ExpTy var = transVar(e.var);
 		if(var.ty.actual() instanceof Types.RECORD){
-			Types.RECORD type = (Types.RECORD)var.ty;
+			Types.RECORD type = (Types.RECORD)(var.ty.actual());
 			Types.Type f = type.check(e.field);
 			if(f != null)
 				return new ExpTy(null,f);
@@ -130,12 +158,12 @@ public class Semant
 				return new ExpTy(null, f.result);
 			}
 			else if(r != null){
-				error(e.pos, "THe argments is not enough");
+				error(e.pos, "The argments is not enough");
 				return new ExpTy(null, f.result);
 			}
 		}
 		else 
-			error(e.pos, "not a function");
+			error(e.pos, e.func.toString() + "not a function");
 		return new ExpTy(null, UNKNOWN);
 	}
 	ExpTy transExp(Absyn.OpExp e){
@@ -277,9 +305,9 @@ public class Semant
 	}
 	ExpTy transExp(Absyn.RecordExp e){
 		Types.Type typ = (Types.Type)env.tenv.get(e.typ);
-		if(typ instanceof Types.RECORD){
+		if(typ.actual() instanceof Types.RECORD){
 			Absyn.FieldExpList f = e.fields;
-			Types.RECORD save = (Types.RECORD)typ;
+			Types.RECORD save = (Types.RECORD)(typ.actual());
 			Types.RECORD r = save;
 			while(f != null && r != null){
 				if(f.name != r.fieldName){
@@ -291,6 +319,8 @@ public class Semant
 					error(f.pos, "type of exp is different with the type of " 
 						  + r.fieldName.toString() + " in declaration");
 				}
+				f = f.tail;
+				r = r.tail;
 			}
 			if(f != null)
 				error(e.pos, "too many fields");
@@ -299,7 +329,7 @@ public class Semant
 			return new ExpTy(null, save);
 		}
 		else {
-			error(e.pos, "undefined type or not a record type");
+			error(e.pos, "undefined type or not a record type " + e.typ.toString());
 			return new ExpTy(null, UNKNOWN);
 		}
 	}
@@ -454,9 +484,9 @@ public class Semant
 			return null;
 		}
 		for(Absyn.FunctionDec p = e; p != null; p = p.next){
-			Types.Type result = transTy(e.result);
-			Types.RECORD formals = transTypeField(e.params);
-			env.venv.put(e.name, new FunEntry(formals, result));
+			Types.Type result = transTy(p.result);
+			Types.RECORD formals = transTypeField(p.params);
+			env.venv.put(p.name, new FunEntry(formals, result));
 		}
 		for(Absyn.FunctionDec p = e; p != null; p = p.next){
 			env.venv.beginScope();
@@ -478,7 +508,7 @@ public class Semant
 		else throw new Error("transTy");
 	}
 	Types.Type transTy(Absyn.NameTy e){
-		if(e.name == null)return VOID;
+		if(e == null)return VOID;
 		Types.Type name = (Types.Type)(env.tenv.get(e.name));
 		if(name == null){
 			error(e.pos, "undefined type");
@@ -496,6 +526,7 @@ public class Semant
 		return new Types.ARRAY(name);
 	}
 	Types.RECORD transTypeField(Absyn.FieldList e){
+		if(e == null)return null;
 		if(checkSame(e)){
 			error(e.pos,"same field name in a record");
 		}
@@ -510,23 +541,23 @@ public class Semant
 	}
 	boolean checkSame(Absyn.TypeDec e){
 		for(Absyn.TypeDec p = e.next; p != null; p = p.next){
-			if(p.name == e.name)return false;
+			if(p.name == e.name)return true;
 		}
-		if(e.next == null)return true;
+		if(e.next == null)return false;
 		else return checkSame(e.next);
 	}
 	boolean checkSame(Absyn.FunctionDec e){
 		for(Absyn.FunctionDec p = e.next; p != null; p = p.next){
-			if(p.name == e.name)return false;
+			if(p.name == e.name)return true;
 		}
-		if(e.next == null)return true;
+		if(e.next == null)return false;
 		else return checkSame(e.next);
 	}
 	boolean checkSame(Absyn.FieldList e){
 		for(Absyn.FieldList p = e.tail; p != null; p = p.tail){
-			if(p.name == e.name)return false;
+			if(p.name == e.name)return true;
 		}
-		if(e.tail == null)return true;
+		if(e.tail == null)return false;
 		else return checkSame(e.tail);
 	}
 }
