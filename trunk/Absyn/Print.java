@@ -145,7 +145,7 @@ public class Print {
   void prExp(LetExp e, int d) {
     say("LetExp("); sayln("");
     prDecList(e.decs, d+1); sayln(",");
-    prExplist(e.body, d+1); say(")");
+    prExp(e.body, d+1); say(")");
   }
 
   void prExp(ArrayExp e, int d) {

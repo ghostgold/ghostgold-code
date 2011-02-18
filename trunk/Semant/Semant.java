@@ -414,7 +414,7 @@ public class Semant
 		env.tenv.beginScope();
 		for(Absyn.DecList p = e.decs; p != null; p = p.tail)
 			transDec(p.head);
-		ExpTy body = transExpList(e.body);
+		ExpTy body = transExp(e.body);
 		env.venv.endScope();
 		env.tenv.endScope();
 		return new ExpTy(null, body.ty);
