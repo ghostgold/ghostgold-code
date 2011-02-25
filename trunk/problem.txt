@@ -1,0 +1,1 @@
+is "if()then nil else nil " legal
