@@ -5,8 +5,8 @@ package Mips;
  */
 class InReg implements Frame.Access{
 	@Override
-	public tree.Exp exp( tree.Exp faddr ) {
-		return new tree.TEMP(temp);
+	public Tree.Exp exp( Tree.Exp faddr ) {
+		return new Tree.TEMP(temp);
 	}
 	Temp.Temp temp;
 	public InReg(){

@@ -41,4 +41,8 @@ public interface Frame {
 	public Temp.Label getName();
 
 	public int wordSize();
+	
+	public Tree.Exp externalCall(String func, Tree.ExpList args);
+	
+
 }

@@ -9,4 +9,7 @@ public class Access {
         home = h; 
 		acc = a;
     }
+	Tree.Exp exp(Tree.Exp framePtr){
+		return acc.framePtr(framePtr);
+	}
 }

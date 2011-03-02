@@ -55,7 +55,7 @@ public class Semant
 	}
 	
 	public void transProg(Absyn.Exp exp){
-		transExp(exp);
+		transExp(exp, null);
 	}
 
 	void error(int pos, String msg){
@@ -63,13 +63,13 @@ public class Semant
 		semantError = true;
 	}
 
-	ExpTy transVar(Absyn.Var e){
-		if(e instanceof Absyn.SimpleVar)return transVar((Absyn.SimpleVar)e);
-		else if (e instanceof Absyn.FieldVar)return transVar((Absyn.FieldVar)e);
-		else if(e instanceof Absyn.SubscriptVar)return transVar((Absyn.SubscriptVar)e);
+	ExpTy transVar(Absyn.Var e, Temp.Label breakLabel){
+		if(e instanceof Absyn.SimpleVar)return transVar((Absyn.SimpleVar)e, breakLabel);
+		else if (e instanceof Absyn.FieldVar)return transVar((Absyn.FieldVar)e, breakLabel);
+		else if(e instanceof Absyn.SubscriptVar)return transVar((Absyn.SubscriptVar)e, breakLabel);
 		throw new Error("transVar");
 	}
-	ExpTy transVar(Absyn.SimpleVar e){
+	ExpTy transVar(Absyn.SimpleVar e, Temp.Label breakLabel){
 		Entry x = (Entry)env.venv.get(e.name);
 		if(x instanceof VarEntry){
 			VarEntry ent = (VarEntry)x;
@@ -80,8 +80,8 @@ public class Semant
 			return new ExpTy(null, UNKNOWN);
 		}
 	}
-	ExpTy transVar(Absyn.FieldVar e){
-		ExpTy var = transVar(e.var);
+	ExpTy transVar(Absyn.FieldVar e, Temp.Label breakLabel){
+		ExpTy var = transVar(e.var, breakLabel);
 		if(var.ty.actual() instanceof Types.RECORD){
 			Types.RECORD type = (Types.RECORD)(var.ty.actual());
 			Types.Type f = type.check(e.field);
@@ -97,11 +97,11 @@ public class Semant
 			return new ExpTy(null, UNKNOWN);
 		}
 	}
-	ExpTy transVar(Absyn.SubscriptVar e){
-		ExpTy var = transVar(e.var);
+	ExpTy transVar(Absyn.SubscriptVar e, Temp.Label breakLabel){
+		ExpTy var = transVar(e.var, breakLabel);
 		if(var.ty.actual() instanceof Types.ARRAY){
 			Types.ARRAY type = (Types.ARRAY)(var.ty.actual());
-			ExpTy index = transExp(e.index);
+			ExpTy index = transExp(e.index, breakLabel);
 			if(index.ty.actual() instanceof Types.INT){
 				return new ExpTy(null, type.element);
 			}
@@ -116,51 +116,55 @@ public class Semant
 		}
 	}
 
-	ExpTy transExp(Absyn.Exp e){
-		if(e instanceof Absyn.VarExp)return transExp((Absyn.VarExp)e);
-		else if(e instanceof Absyn.NilExp)return transExp((Absyn.NilExp)e);
-		else if(e instanceof Absyn.IntExp)return transExp((Absyn.IntExp)e);
-		else if(e instanceof Absyn.StringExp)return transExp((Absyn.StringExp)e);
-		else if(e instanceof Absyn.CallExp)return transExp((Absyn.CallExp)e);
-		else if(e instanceof Absyn.OpExp)return transExp((Absyn.OpExp)e);
-		else if(e instanceof Absyn.RecordExp)return transExp((Absyn.RecordExp)e);
-		else if(e instanceof Absyn.SeqExp)return transExp((Absyn.SeqExp)e);
-		else if(e instanceof Absyn.AssignExp)return transExp((Absyn.AssignExp)e);
-		else if(e instanceof Absyn.IfExp)return transExp((Absyn.IfExp)e);
-		else if(e instanceof Absyn.WhileExp)return transExp((Absyn.WhileExp)e);
-		else if(e instanceof Absyn.ForExp)return transExp((Absyn.ForExp)e);
-		else if(e instanceof Absyn.BreakExp)return transExp((Absyn.BreakExp)e);
-		else if(e instanceof Absyn.LetExp)return transExp((Absyn.LetExp)e);
-		else if(e instanceof Absyn.ArrayExp)return transExp((Absyn.ArrayExp)e);
+	ExpTy transExp(Absyn.Exp e, Temp.Label breakLabel){
+		if(e instanceof Absyn.VarExp)return transExp((Absyn.VarExp)e, breakLabel);
+		else if(e instanceof Absyn.NilExp)return transExp((Absyn.NilExp)e, breakLabel);
+		else if(e instanceof Absyn.IntExp)return transExp((Absyn.IntExp)e, breakLabel);
+		else if(e instanceof Absyn.StringExp)return transExp((Absyn.StringExp)e, breakLabel);
+		else if(e instanceof Absyn.CallExp)return transExp((Absyn.CallExp)e, breakLabel);
+		else if(e instanceof Absyn.OpExp)return transExp((Absyn.OpExp)e, breakLabel);
+		else if(e instanceof Absyn.RecordExp)return transExp((Absyn.RecordExp)e, breakLabel);
+		else if(e instanceof Absyn.SeqExp)return transExp((Absyn.SeqExp)e, breakLabel);
+		else if(e instanceof Absyn.AssignExp)return transExp((Absyn.AssignExp)e, breakLabel);
+		else if(e instanceof Absyn.IfExp)return transExp((Absyn.IfExp)e, breakLabel);
+		else if(e instanceof Absyn.WhileExp)return transExp((Absyn.WhileExp)e, breakLabel);
+		else if(e instanceof Absyn.ForExp)return transExp((Absyn.ForExp)e, breakLabel);
+		else if(e instanceof Absyn.BreakExp)return transExp((Absyn.BreakExp)e, breakLabel);
+		else if(e instanceof Absyn.LetExp)return transExp((Absyn.LetExp)e, breakLabel);
+		else if(e instanceof Absyn.ArrayExp)return transExp((Absyn.ArrayExp)e, breakLabel);
 		else throw new Error("transExp");
 	}
-	ExpTy transExp(Absyn.VarExp e)	{
-		return transVar(e.var);
+	ExpTy transExp(Absyn.VarExp e, Temp.Label breakLabel)	{
+		return transVar(e.var, breakLabel);
 	}
-	ExpTy transExp(Absyn.NilExp e) {
+	ExpTy transExp(Absyn.NilExp e, Temp.Label breakLabel) {
 		return new ExpTy(null, NIL);
 	}
-	ExpTy transExp(Absyn.IntExp e) {
-		return new ExpTy(null , INT);
+	ExpTy transExp(Absyn.IntExp e, Temp.Label breakLabel) {
+		return new ExpTy(translate.createIntExp(e.value) , INT);
 	}
-	ExpTy transExp(Absyn.StringExp e){
-		return new ExpTy(null , STRING);
+	ExpTy transExp(Absyn.StringExp e, Temp.Label breakLabel){
+		return new ExpTy(translate.createStringExp(e.value) , STRING);
 	}
-	ExpTy transExp(Absyn.CallExp e){
+	ExpTy transExp(Absyn.CallExp e, Temp.Label breakLabel){
 		Entry x = (Entry)env.venv.get(e.func);
 		if( x instanceof FunEntry){
 			FunEntry f = (FunEntry)x;
 			Types.RECORD r = f.formals;
 			Absyn.ExpList args = e.args;
+			Translate.ExpList argsexp = new Translate.ExpList(null, null);
+			Translate.ExpList saveargs = argsexp;
 			while(args != null && r != null){
-				ExpTy arg = transExp(args.head);
+				ExpTy arg = transExp(args.head, breakLabel);
 				if(!arg.ty.coerceTo(r.fieldType))
 					error(args.head.pos, "The type of actual argment is different from the formal ones");
+				argsexp.tail = new Translate.ExpList(arg.exp, null);
+				argsexp = argsexp.tail;
 				args = args.tail;
 				r = r.tail;
 			}
 			if(args == null && r == null)
-				return new ExpTy(null, f.result);
+				return new ExpTy(translate.createCallExp(f, saveargs.tail, level), f.result);
 			else if(args != null){
 				error(e.pos, "Too many actual argments");
 				return new ExpTy(null, f.result);
@@ -174,13 +178,13 @@ public class Semant
 			error(e.pos, "undefined function "+e.func.toString());
 		return new ExpTy(null, UNKNOWN);
 	}
-	ExpTy transExp(Absyn.OpExp e){
-		ExpTy left = transExp(e.left);
-		ExpTy right = transExp(e.right);
+	ExpTy transExp(Absyn.OpExp e, Temp.Label breakLabel){
+		ExpTy left = transExp(e.left, breakLabel);
+		ExpTy right = transExp(e.right, breakLabel);
 		switch(e.oper){
 		case Absyn.OpExp.PLUS:
 			if(left.ty.coerceTo(INT) && right.ty.coerceTo(INT))
-				return new ExpTy(null, INT);
+				return new ExpTy(translate.createPlusExp(left.exp, right.exp), INT);
 			else if(!left.ty.coerceTo(INT)){
 				error(e.left.pos, "integer required");
 				return new ExpTy(null, INT);
@@ -191,7 +195,7 @@ public class Semant
 			break;
 		case Absyn.OpExp.MINUS:
 			if(left.ty.coerceTo(INT) && right.ty.coerceTo(INT))
-				return new ExpTy(null, INT);
+				return new ExpTy(translate.createMinusExp(left.exp,right.exp), INT);
 			else if(!left.ty.coerceTo(INT)){
 				error(e.left.pos, "integer required");
 				return new ExpTy(null, INT);
@@ -202,7 +206,7 @@ public class Semant
 			break;
 		case Absyn.OpExp.MUL:
 			if(left.ty.coerceTo(INT) && right.ty.coerceTo(INT))
-				return new ExpTy(null, INT);
+				return new ExpTy(translate.createMulExp(left.exp, right.exp), INT);
 			else if(!left.ty.coerceTo(INT)){
 				error(e.left.pos, "integer required");
 				return new ExpTy(null, INT);
@@ -213,7 +217,7 @@ public class Semant
 			break;
 		case Absyn.OpExp.DIV:
 			if(left.ty.coerceTo(INT) && right.ty.coerceTo(INT))
-				return new ExpTy(null, INT);
+				return new ExpTy(translate.createDivExp(left.exp, right.exp), INT);
 			else if(!left.ty.coerceTo(INT)){
 				error(e.left.pos, "integer required");
 				return new ExpTy(null, INT);
@@ -224,31 +228,31 @@ public class Semant
 			break;
 		case Absyn.OpExp.EQ:
 			if(left.ty.coerceTo(INT) && right.ty.coerceTo(INT))
-				return new ExpTy(null, INT);
+				return new ExpTy(translate.createEqExp(left.exp, right.exp), INT);
 			else if(left.ty.coerceTo(STRING) && right.ty.coerceTo(STRING))
-				return new ExpTy(null, INT);
+				return new ExpTy(translate.createStringEqExp(left.exp, right.exp, level), INT);
 			else if((left.ty.coerceTo(right.ty) || right.ty.coerceTo(left.ty)) 
 					&& !(left.ty.coerceTo(NIL) && right.ty.coerceTo(NIL)))
-				return new ExpTy(null, INT);
+				return new ExpTy(translate.createEqExp(left.exp, right.exp), INT);
 			else error(e.pos, "compare between different type");
 			return new ExpTy(null, INT);
 
 		case Absyn.OpExp.NE:
 			if(left.ty.coerceTo(INT) && right.ty.coerceTo(INT))
-				return new ExpTy(null, INT);
+				return new ExpTy(translate.createNeExp(left.exp, right.exp), INT);
 			else if(left.ty.coerceTo(STRING) && right.ty.coerceTo(STRING))
-				return new ExpTy(null, INT);
+				return new ExpTy(translate.createStringNeExp(left.exp, right.exp, level), INT);
 			else if(left.ty.coerceTo(right.ty) || right.ty.coerceTo(left.ty)
 					&& !(left.ty.coerceTo(NIL) && right.ty.coerceTo(NIL)))
-				return new ExpTy(null, INT);
+				return new ExpTy(translate.createNeExp(left.exp, right.exp), INT);
 			else error(e.pos, "compare between different type");
 			return new ExpTy(null, INT);
 
 		case Absyn.OpExp.LT:
 			if(left.ty.coerceTo(INT) && right.ty.coerceTo(INT))
-				return new ExpTy(null, INT);
+				return new ExpTy(translate.createLtExp(left.exp, right.exp), INT);
 			else if(left.ty.coerceTo(STRING) && right.ty.coerceTo(STRING))
-				return new ExpTy(null, INT);
+				return new ExpTy(translate.createStringLtExp(left.exp, right.exp, level), INT);
 			else if(!(left.ty.coerceTo(INT) || left.ty.coerceTo(STRING)))
 				error(e.left.pos, "integer or string required");
 			else if(!(right.ty.coerceTo(INT) || right.ty.coerceTo(STRING)))
@@ -259,9 +263,9 @@ public class Semant
 
 		case Absyn.OpExp.LE:
 			if(left.ty.coerceTo(INT) && right.ty.coerceTo(INT))
-				return new ExpTy(null, INT);
+				return new ExpTy(translate.createLeExp(left.exp, right.exp), INT);
 			else if(left.ty.coerceTo(STRING) && right.ty.coerceTo(STRING))
-				return new ExpTy(null, INT);
+				return new ExpTy(translate.createStringLeExp(left.exp, right.exp, level), INT);
 			else if(!(left.ty.coerceTo(INT) || left.ty.coerceTo(STRING)))
 				error(e.left.pos, "integer or string required");
 			else if(!(right.ty.coerceTo(INT) || right.ty.coerceTo(STRING)))
@@ -272,9 +276,9 @@ public class Semant
 
 		case Absyn.OpExp.GT:
 			if(left.ty.coerceTo(INT) && right.ty.coerceTo(INT))
-				return new ExpTy(null, INT);
+				return new ExpTy(translate.createGtExp(left.exp, right.exp), INT);
 			else if(left.ty.coerceTo(STRING) && right.ty.coerceTo(STRING))
-				return new ExpTy(null, INT);
+				return new ExpTy(translate.createStringGtExp(left.exp, right.exp, level), INT);
 			else if(!(left.ty.coerceTo(INT) || left.ty.coerceTo(STRING)))
 				error(e.left.pos, "integer or string required");
 			else if(!(right.ty.coerceTo(INT) || right.ty.coerceTo(STRING)))
@@ -285,9 +289,9 @@ public class Semant
 
 		case Absyn.OpExp.GE:
 			if(left.ty.coerceTo(INT) && right.ty.coerceTo(INT))
-				return new ExpTy(null, INT);
+				return new ExpTy(translate.createGeExp(left.exp, right.exp), INT);
 			else if(left.ty.coerceTo(STRING) && right.ty.coerceTo(STRING))
-				return new ExpTy(null, INT);
+				return new ExpTy(translate.createStringGeExp(left.exp, right.exp, level), INT);
 			else if(!(left.ty.coerceTo(INT) || left.ty.coerceTo(STRING)))
 				error(e.left.pos, "integer or string required");
 			else if(!(right.ty.coerceTo(INT) || right.ty.coerceTo(STRING)))
@@ -301,7 +305,9 @@ public class Semant
 		}
 		return new ExpTy(null, INT);
 	}
-	ExpTy transExp(Absyn.RecordExp e){
+
+
+	ExpTy transExp(Absyn.RecordExp e, Temp.Label breakLabel){
 		Types.Type typ = (Types.Type)(env.tenv.get(e.typ));
 		if(typ != null && typ.actual() instanceof Types.RECORD){
 			Absyn.FieldExpList f = e.fields;
@@ -312,7 +318,7 @@ public class Semant
 					error(f.pos, "record " + e.typ.toString() + " has no field with name " 
 						  + f.name.toString());
 				}
-				ExpTy init = transExp(f.init);
+				ExpTy init = transExp(f.init, breakLabel);
 				if(!init.ty.coerceTo(r.fieldType)){
 					error(f.pos, "type of exp is different with the type of " 
 						  + r.fieldName.toString() + " in declaration");
@@ -331,20 +337,27 @@ public class Semant
 			return new ExpTy(null, UNKNOWN);
 		}
 	}
-	ExpTy transExp(Absyn.SeqExp e){
-		return transExpList(e.list);
+	ExpTy transExp(Absyn.SeqExp e, Temp.Label breakLabel){
+		return transExpList(e.list, breakLabel);
 	}
-	ExpTy transExpList(Absyn.ExpList list){
+	ExpTy transExpList(Absyn.ExpList list, Temp.Label breakLabel){
+		Translate.ExpList seq = new Translate.ExpList(null, null);
+		Translate.ExpList saveseq = seq;
+		ExpTy t = new ExpTy(null, VOID);
 		while(list != null){
-			ExpTy t = transExp(list.head);
-			if(list.tail == null)return t;
+			t = transExp(list.head, breakLabel);
+			seq.tail = new Translate.ExpList(t.exp, null);
+			seq = seq.tail;
+			if(list.tail == null)break;
 			list = list.tail;
 		}
-		return new ExpTy(null, VOID);
+		boolean stm = false;
+		if(t.ty.coerceTo(VOID))stm = true;
+		return new ExpTy(translate.createExpList(saveseq.tail, stm), t.ty);
 	}
-	ExpTy transExp(Absyn.AssignExp e){
-		ExpTy var = transVar(e.var);
-		ExpTy exp = transExp(e.exp);
+	ExpTy transExp(Absyn.AssignExp e, Temp.Label breakLabel){
+		ExpTy var = transVar(e.var, breakLabel);
+		ExpTy exp = transExp(e.exp, breakLabel);
 		if(var.ty == INDEX){
 			error(e.pos, "index varialbe can not be assign a value");
 		}
@@ -354,67 +367,64 @@ public class Semant
 			return new ExpTy(null, VOID);
 		}
 	}
-	ExpTy transExp(Absyn.IfExp e){
-		ExpTy test = transExp(e.test);
+	ExpTy transExp(Absyn.IfExp e, Temp.Label breakLabel){
+		ExpTy test = transExp(e.test, breakLabel);
 		if(!test.ty.coerceTo(INT)){
 			error(e.pos, "integer required");
 		}
-		ExpTy thenclause = transExp(e.thenclause);
+		ExpTy thenclause = transExp(e.thenclause, breakLabel);
 		if(e.elseclause != null){
-			ExpTy elseclause = transExp(e.elseclause);
+			ExpTy elseclause = transExp(e.elseclause, breakLabel);
 			if(!(thenclause.ty.coerceTo(elseclause.ty) 
 				 || elseclause.ty.coerceTo(thenclause.ty))){
 				error(e.pos, "then and else should have the same type");
 				return new ExpTy(null, UNKNOWN);
 			}
 			else {
-				if(!thenclause.ty.coerceTo(NIL))return new ExpTy(null, thenclause.ty);
-				else return new ExpTy(null, elseclause.ty);
+				if(!thenclause.ty.coerceTo(NIL))return new ExpTy(translate.createIfThenElse(test.exp, thenclause.exp, elseclause.exp), thenclause.ty);
+				else return new ExpTy(translate.createIfThenElse(test.exp, thenclause.exp, elseclause.exp), elseclause.ty);
 			}
 		}
 		else {
 			if(!thenclause.ty.coerceTo(VOID))
 				error(e.pos, "if-then should return no value");
-			return new ExpTy(null, VOID);
+			return new ExpTy(translate.createIfThenElse(test.exp, thenclause.exp, null), VOID);
 		}
 	}
-	ExpTy transExp(Absyn.WhileExp e){
-		ExpTy test = transExp(e.test);
+	ExpTy transExp(Absyn.WhileExp e, Temp.Label breakLabel){
+		ExpTy test = transExp(e.test, breakLabel);
 		if(!test.ty.coerceTo(INT))
 			error(e.pos, "integer required");
-		env.tenv.beginScope();
-		env.tenv.put(BREAK, STRING);
-		ExpTy body = transExp(e.body);
-		env.tenv.endScope();
+		Temp.Label finish = new Temp.Label;
+		ExpTy body = transExp(e.body, finish);
 		if(!body.ty.coerceTo(VOID))
 			error(e.pos, "no value should be produced by the body of a while loop");
-		return new ExpTy(null, VOID);
+		return new ExpTy(translate.createWhileExp(test.exp, body.exp, finish), VOID);
 	}
-	ExpTy transExp(Absyn.ForExp e){
+	ExpTy transExp(Absyn.ForExp e, Temp.Label breakLabel){
 		ExpTy hi = transExp(e.hi);
 		if(!hi.ty.coerceTo(INT)){
 			error(e.pos, "upper bound should be integer");
 		}
-		env.venv.beginScope();
 		ExpTy init = transExp(e.var.init);
 		if(!init.ty.coerceTo(INT)){
 			error(e.pos, "lower bound should be integer");
 		}
-		env.venv.put(e.var.name, new VarEntry(INDEX));
-		env.tenv.beginScope();
-		env.tenv.put(BREAK, STRING);
-		ExpTy body = transExp(e.body);
+		VarEntry loopVar = new VarEntry(level.allocLocal(var.escape), INDEX);
+		Temp.Label finish = new Temp.Label();
+
+		env.venv.beginScope();
+		env.venv.put(e.var.name, loopVar);
+		ExpTy body = transExp(e.body, finish);
 		env.venv.endScope();
-		env.tenv.endScope();
 		if(!body.ty.coerceTo(VOID))
 			error(e.pos, "no value should be produced by the body of a while loop");
-		return new ExpTy(null, VOID);
+		return new ExpTy(translate.createForExp(loopVar.access, init.exp, hi.exp, body.exp, level, finish), VOID);
 	}
-	ExpTy transExp(Absyn.BreakExp e){
-		Types.Type b = (Types.Type)(env.venv.get(BREAK));
-		if(b.coerceTo(INT))
+	ExpTy transExp(Absyn.BreakExp e, Temp.Label breakLabel){
+		if(breakLabel == null)
 			error(e.pos, "break must be in a loop");
-		return new ExpTy(null, VOID);
+		return new ExpTy(translate.createBreakExp(breakLabel), VOID);
 	}
 	ExpTy transExp(Absyn.LetExp e){
 		env.venv.beginScope();
@@ -498,7 +508,11 @@ public class Semant
 			env.tenv.beginScope();
 			env.tenv.put(BREAK, INT);
 			for(Absyn.FieldList q = p.params; q != null; q = q.tail){
-				env.venv.put(q.name, new VarEntry((Types.Type)(env.tenv.get(q.typ))));
+				Types.Type ty = (Types.Type)(env.tenv.get(q.typ));
+				if(ty != null)
+					env.venv.put(q.name, new VarEntry(ty));
+				else 
+					error(q.pos, "undefined type");
 			}
 			ExpTy body = transExp(p.body);
 			if(!body.ty.coerceTo(transTy(p.result)))

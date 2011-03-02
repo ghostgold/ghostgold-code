@@ -67,5 +67,8 @@ public class Frame implements Frame.Frame{
 	public temp.Label getName() {
 		return name;
 	}
-
+	@Override
+	public Tree.Exp exernalCall(String s, Tree.ExpList args){
+		return newn Tree.Call(new Tree.NAME(Temp.label(s)), args);
+	}
 }
