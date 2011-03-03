@@ -73,7 +73,7 @@ public class Semant
 		Entry x = (Entry)env.venv.get(e.name);
 		if(x instanceof VarEntry){
 			VarEntry ent = (VarEntry)x;
-			return new ExpTy(null, ent.ty);
+			return new ExpTy(translate.simpleVar(ent.access, level), ent.ty);
 		}
 		else {
 			error(e.pos, "undefined variable " + e.name);
@@ -84,9 +84,15 @@ public class Semant
 		ExpTy var = transVar(e.var, breakLabel);
 		if(var.ty.actual() instanceof Types.RECORD){
 			Types.RECORD type = (Types.RECORD)(var.ty.actual());
-			Types.Type f = type.check(e.field);
+			Types.Type f = null;
+			int index = 0;
+			while(type != null){
+				if(type.fieldName == n)f = fieldType;
+				type = type.tail;
+				index++;
+			}
 			if(f != null)
-				return new ExpTy(null,f);
+				return new ExpTy(translate.fieldVar(var.exp, index, level),f);
 			else {
 				error(e.pos, "The record do not have a field with name " + e.field.toString());
 				return new ExpTy(null,UNKNOWN);
@@ -103,7 +109,7 @@ public class Semant
 			Types.ARRAY type = (Types.ARRAY)(var.ty.actual());
 			ExpTy index = transExp(e.index, breakLabel);
 			if(index.ty.actual() instanceof Types.INT){
-				return new ExpTy(null, type.element);
+				return new ExpTy(translate.subscriptVar(var.exp, index.exp, level), type.element);
 			}
 			else {
 				error(e.pos, "The subscript should be an int");
@@ -138,7 +144,7 @@ public class Semant
 		return transVar(e.var, breakLabel);
 	}
 	ExpTy transExp(Absyn.NilExp e, Temp.Label breakLabel) {
-		return new ExpTy(null, NIL);
+		return new ExpTy(translate.createNilExp(), NIL);
 	}
 	ExpTy transExp(Absyn.IntExp e, Temp.Label breakLabel) {
 		return new ExpTy(translate.createIntExp(e.value) , INT);
@@ -313,24 +319,36 @@ public class Semant
 			Absyn.FieldExpList f = e.fields;
 			Types.RECORD save = (Types.RECORD)(typ.actual());
 			Types.RECORD r = save;
+			Translate.ExpList fieldexp = new Translate.ExpList(null, null);
+			Translate.ExpList saveFieldExp = fieldexp;
+			int fieldCount = 0;
 			while(f != null && r != null){
 				if(f.name != r.fieldName){
 					error(f.pos, "record " + e.typ.toString() + " has no field with name " 
 						  + f.name.toString());
+					return new ExpTy(null, save);
 				}
 				ExpTy init = transExp(f.init, breakLabel);
 				if(!init.ty.coerceTo(r.fieldType)){
 					error(f.pos, "type of exp is different with the type of " 
 						  + r.fieldName.toString() + " in declaration");
+					return new ExpTy(null, save);
 				}
+				fieldexp.tail = new Translate.ExpList(init.exp, null);
+				fieldexp = fieldexp.tail;
 				f = f.tail;
 				r = r.tail;
+				fieldCount++;
 			}
-			if(f != null)
+			if(f != null){
 				error(e.pos, "too many fields");
-			else if(r != null)
+				return new ExpTy(null, save);
+			}
+			else if(r != null){
 				error(e.pos, "the fields is not enough");
-			return new ExpTy(null, save);
+				return new ExpTy(null, save);
+			}
+			else return new ExpTy(translate.createRecordExp(fieldCount, saveFieldExp.tail, level), save);
 		}
 		else {
 			error(e.pos, "undefined type or not a record type " + e.typ.toString());
@@ -360,8 +378,9 @@ public class Semant
 		ExpTy exp = transExp(e.exp, breakLabel);
 		if(var.ty == INDEX){
 			error(e.pos, "index varialbe can not be assign a value");
+			return new ExpTy(null, VOID);
 		}
-		if(exp.ty.coerceTo(var.ty))return new ExpTy(null, VOID);
+		else if(exp.ty.coerceTo(var.ty))return new ExpTy(translate.createAssignExp(var.exp, exp.exp), VOID);
 		else {
 			error(e.pos, "assignment to variable a exp with different type");
 			return new ExpTy(null, VOID);
@@ -440,13 +459,18 @@ public class Semant
 		Types.Type ty = (Types.Type)(env.tenv.get(e.typ));
 		if(ty != null && ty.actual() instanceof Types.ARRAY){
 			ExpTy size = transExp(e.size);
-			if(!size.ty.coerceTo(INT))
+			if(!size.ty.coerceTo(INT)){
 				error(e.pos, "size should be an integer");
+				return new ExpTy(null, ty);
+			}
 			ExpTy init = transExp(e.init);
-			if(!init.ty.coerceTo(((Types.ARRAY)ty.actual()).element))
+			if(!init.ty.coerceTo(((Types.ARRAY)ty.actual()).element)){
 				error(e.pos, 
 					  "the type of initial value is different from the type of array elements");
-			return new ExpTy(null, ty);
+				return new ExpTy(null, ty);
+			}
+			return new ExpTy(translate.createArrayExp(size.exp, init.exp, 
+													  ((Types.Array)ty.actual()).element, tenv), ty);
 		}
 		else{
 			error(e.pos, "type should be an array type");

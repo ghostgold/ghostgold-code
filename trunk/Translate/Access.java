@@ -10,6 +10,6 @@ public class Access {
 		acc = a;
     }
 	Tree.Exp exp(Tree.Exp framePtr){
-		return acc.framePtr(framePtr);
+		return acc.exp(framePtr);
 	}
 }
