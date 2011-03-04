@@ -10,14 +10,9 @@ public class Semant
 	public static final Types.VOID VOID = new Types.VOID();
 	public static final Types.RECORD UNKNOWN = new Types.RECORD(null, null, null);
 	public boolean semantError;
-	public Symbol.Symbol BREAK;
 	public Translate.Level level;
 	public Translate.Translate translate;
-	public Semant(ErrorMsg.ErrorMsg err, Translate.Level lev){
-		this(new Env(err), new Translate.Translate(), lev);
-		semantError = false;
-		BREAK = Symbol.Symbol.symbol("break");
-		env.tenv.put(BREAK, INT);
+	public void init(){
 		env.tenv.put(Symbol.Symbol.symbol("int"),INT);
 		env.tenv.put(Symbol.Symbol.symbol("string"),STRING);
 		env.venv.put(Symbol.Symbol.symbol("print"), 
@@ -47,7 +42,13 @@ public class Semant
 					 new FunEntry(level, new Temp.Label("not"), new Types.RECORD(Symbol.Symbol.symbol("i"), INT, null), INT));
 		env.venv.put(Symbol.Symbol.symbol("exit"),
 					 new FunEntry(level, new Temp.Label("exit"), new Types.RECORD(Symbol.Symbol.symbol("i"), INT, null), VOID));
+		
 	}
+	public Semant(ErrorMsg.ErrorMsg err, Translate.Level lev){
+		this(new Env(err), new Translate.Translate(), lev);
+		semantError = false;
+	}
+
 	public Semant(Env e, Translate.Translate trans, Translate.Level lev){
 		env = e;
 		translate = trans;
@@ -87,7 +88,10 @@ public class Semant
 			Types.Type f = null;
 			int index = 0;
 			while(type != null){
-				if(type.fieldName == n)f = fieldType;
+				if(type.fieldName == e.field){
+					f = type.fieldType;
+					break;
+				}
 				type = type.tail;
 				index++;
 			}
@@ -414,22 +418,22 @@ public class Semant
 		ExpTy test = transExp(e.test, breakLabel);
 		if(!test.ty.coerceTo(INT))
 			error(e.pos, "integer required");
-		Temp.Label finish = new Temp.Label;
+		Temp.Label finish = new Temp.Label();
 		ExpTy body = transExp(e.body, finish);
 		if(!body.ty.coerceTo(VOID))
 			error(e.pos, "no value should be produced by the body of a while loop");
 		return new ExpTy(translate.createWhileExp(test.exp, body.exp, finish), VOID);
 	}
 	ExpTy transExp(Absyn.ForExp e, Temp.Label breakLabel){
-		ExpTy hi = transExp(e.hi);
+		ExpTy hi = transExp(e.hi, breakLabel);
 		if(!hi.ty.coerceTo(INT)){
 			error(e.pos, "upper bound should be integer");
 		}
-		ExpTy init = transExp(e.var.init);
+		ExpTy init = transExp(e.var.init, breakLabel);
 		if(!init.ty.coerceTo(INT)){
 			error(e.pos, "lower bound should be integer");
 		}
-		VarEntry loopVar = new VarEntry(level.allocLocal(var.escape), INDEX);
+		VarEntry loopVar = new VarEntry(level.allocLocal(e.var.escape), INDEX);
 		Temp.Label finish = new Temp.Label();
 
 		env.venv.beginScope();
@@ -445,60 +449,77 @@ public class Semant
 			error(e.pos, "break must be in a loop");
 		return new ExpTy(translate.createBreakExp(breakLabel), VOID);
 	}
-	ExpTy transExp(Absyn.LetExp e){
+	ExpTy transExp(Absyn.LetExp e, Temp.Label breakLabel){
 		env.venv.beginScope();
 		env.tenv.beginScope();
-		for(Absyn.DecList p = e.decs; p != null; p = p.tail)
-			transDec(p.head);
-		ExpTy body = transExp(e.body);
+		Translate.ExpList dec = new Translate.ExpList(null, null);
+		Translate.ExpList savedec = dec;
+		for(Absyn.DecList p = e.decs; p != null; p = p.tail){
+			Translate.Exp t = transDec(p.head, breakLabel);
+			if(t != null)
+				dec.tail = new Translate.ExpList(t, null);
+		}
+		ExpTy body = transExp(e.body, breakLabel);
 		env.venv.endScope();
 		env.tenv.endScope();
-		return new ExpTy(null, body.ty);
+		return new ExpTy(translate.createLetExp(savedec.tail, body.exp), body.ty);
 	}
-	ExpTy transExp(Absyn.ArrayExp e){
+	ExpTy transExp(Absyn.ArrayExp e, Temp.Label breakLabel){
 		Types.Type ty = (Types.Type)(env.tenv.get(e.typ));
 		if(ty != null && ty.actual() instanceof Types.ARRAY){
-			ExpTy size = transExp(e.size);
+			ExpTy size = transExp(e.size, breakLabel);
 			if(!size.ty.coerceTo(INT)){
 				error(e.pos, "size should be an integer");
 				return new ExpTy(null, ty);
 			}
-			ExpTy init = transExp(e.init);
+			ExpTy init = transExp(e.init, breakLabel);
 			if(!init.ty.coerceTo(((Types.ARRAY)ty.actual()).element)){
 				error(e.pos, 
 					  "the type of initial value is different from the type of array elements");
 				return new ExpTy(null, ty);
 			}
 			return new ExpTy(translate.createArrayExp(size.exp, init.exp, 
-													  ((Types.Array)ty.actual()).element, tenv), ty);
+													  e.init, level), ty);
 		}
 		else{
 			error(e.pos, "type should be an array type");
 			return new ExpTy(null, UNKNOWN);
 		}
 	}
-	Exp transDec(Absyn.Dec e){
-		if(e instanceof Absyn.VarDec)return transDec((Absyn.VarDec)e);
-		else if(e instanceof Absyn.FunctionDec)return transDec((Absyn.FunctionDec)e);
-		else if(e instanceof Absyn.TypeDec)return transDec((Absyn.TypeDec)e);
+	Exp transDec(Absyn.Dec e, Temp.Label breakLabel){
+		if(e instanceof Absyn.VarDec)return transDec((Absyn.VarDec)e, breakLabel);
+		else if(e instanceof Absyn.FunctionDec)return transDec((Absyn.FunctionDec)e, breakLabel);
+		else if(e instanceof Absyn.TypeDec)return transDec((Absyn.TypeDec)e, breakLabel);
 		else throw new Error("transDec");
 	}
-	Exp transDec(Absyn.VarDec e){
-		ExpTy init = transExp(e.init);
+	Exp transDec(Absyn.VarDec e, Temp.Label breakLabel){
+		ExpTy init = transExp(e.init, breakLabel);
 		if(e.typ == null){
-			if(init.ty.coerceTo(NIL))
+			if(init.ty.coerceTo(NIL)){
 				error(e.pos, "type must be given for nil");
-			else env.venv.put(e.name, new VarEntry(init.ty));
+				return translate.createNilExp();
+			}
+			else {
+				VarEntry var = new VarEntry(level.allocLocal(e.escape), init.ty);
+				env.venv.put(e.name, var);
+				return translate.createVarDec(var.access, init.exp, level);
+			}
 		}
 		else {
 			Types.Type ty = transTy(e.typ);
-			if(!init.ty.coerceTo(ty))
+			if(!init.ty.coerceTo(ty)){
 				error(e.pos, "type of initial value is different with the type in declaration");
-			env.venv.put(e.name, new VarEntry(ty));
+				return translate.createNilExp();
+			}
+			else {
+				VarEntry var = new VarEntry(level.allocLocal(e.escape), init.ty);
+				env.venv.put(e.name, var);
+				return translate.createVarDec(var.access, init.exp, level);
+			}
 		}
-		return null;
+
 	}
-	Exp transDec(Absyn.TypeDec e){
+	Exp transDec(Absyn.TypeDec e, Temp.Label breakLabel){
 		if(checkSame(e)){
 			error(e.pos, "same type-id in a sequence");
 			return null;
@@ -517,7 +538,7 @@ public class Semant
 		}
 		return null;
 	}
-	Exp transDec(Absyn.FunctionDec e){
+	Exp transDec(Absyn.FunctionDec e, Temp.Label breakLabel){
 		if(checkSame(e)){
 			error(e.pos, "same function-id in a sequence");
 			return null;
@@ -525,12 +546,15 @@ public class Semant
 		for(Absyn.FunctionDec p = e; p != null; p = p.next){
 			Types.Type result = transTy(p.result);
 			Types.RECORD formals = transTypeField(p.params);
-			env.venv.put(p.name, new FunEntry(formals, result));
+			Temp.Label label = new Temp.Label();
+			Util.BoolList escape = p.params.getEscape();
+			Translate.Level newLevel = new Translate.Level(level, label, escape);
+			env.venv.put(p.name, new FunEntry(newLevel, label, formals, result));
 		}
+
 		for(Absyn.FunctionDec p = e; p != null; p = p.next){
 			env.venv.beginScope();
 			env.tenv.beginScope();
-			env.tenv.put(BREAK, INT);
 			for(Absyn.FieldList q = p.params; q != null; q = q.tail){
 				Types.Type ty = (Types.Type)(env.tenv.get(q.typ));
 				if(ty != null)
@@ -538,9 +562,12 @@ public class Semant
 				else 
 					error(q.pos, "undefined type");
 			}
-			ExpTy body = transExp(p.body);
+			FunEntry function = (FunEntry)env.venv.get(p.name);
+			Semant newSemant = new Semant(env, translate, function.level);
+			ExpTy body = newSemant.transExp(p.body, null);
 			if(!body.ty.coerceTo(transTy(p.result)))
 				error(p.pos, "return type of " + p.name + " different from declaration");
+			else translate.procEntryExit(function.level, body.exp);
 			env.venv.endScope();
 			env.tenv.endScope();
 		}

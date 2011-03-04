@@ -5,8 +5,8 @@ package Mips;
  */
 public class InFrame implements Frame.Access{
 	@Override
-	public Tree.Exp exp( tree.Exp faddr ) {
-		return new Tree.MEM(new Tree.BINOP(BINOP.PLUS, faddr, new Tree.CONST(offset)));
+	public Tree.Exp exp( Tree.Exp faddr ) {
+		return new Tree.MEM(new Tree.BINOP(Tree.BINOP.PLUS, faddr, new Tree.CONST(offset)));
 	}
 	int offset;
 	public InFrame(int o){

@@ -1,5 +1,6 @@
 package Absyn;
 import Symbol.Symbol;
+import Util.BoolList;
 public class FieldList extends Absyn {
 	public Symbol name;
 	public Symbol typ;
@@ -10,5 +11,9 @@ public class FieldList extends Absyn {
 	{
 		if(tail == null)tail = t;
 		else tail.append(t);
+	}
+	public BoolList getEscape(){
+		if(tail == null)return new BoolList(escape, null);
+		else return new BoolList(escape, tail.getEscape());
 	}
 }

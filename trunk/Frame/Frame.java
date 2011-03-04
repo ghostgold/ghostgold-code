@@ -15,7 +15,7 @@ public interface Frame {
      *  @return the temp of $fp
      */
     public Temp.Temp FP();
-	
+	public Temp.Temp RV();
     /**
      * create a new frame the same type as current frame	
      * 	note: this method is a factory method
