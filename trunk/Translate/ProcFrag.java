@@ -5,6 +5,6 @@ public class ProcFrag extends Frag{
 		body = b;
 		frame = f;
 	}
-	Tree.Stm body;
-	Frame.Frame frame;
+	public Tree.Stm body;
+	public Frame.Frame frame;
 }

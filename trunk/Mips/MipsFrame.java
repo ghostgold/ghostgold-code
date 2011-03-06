@@ -12,10 +12,10 @@ public class MipsFrame implements Frame{
 
 	public Label name;
 	public AccessList formals;
-	public static Temp fp = new Temp();
-	public static Temp rv = new Temp();
+	public static Temp fp = new Temp("fp");
+	public static Temp rv = new Temp("rv");
 	int allocPoint;
-
+	int p;
 	@Override
 	public Frame newFrame( Label name , BoolList fmls ) {
 		return new Mips.MipsFrame(name, fmls);
@@ -23,23 +23,22 @@ public class MipsFrame implements Frame{
 	
 	public MipsFrame(Label n, BoolList fmls){
 		name = n;
-		int p = wordSize();
+		p = wordSize();
 		formals = new AccessList(null, null);
 		AccessList tempF = formals;
 		if(fmls != null)do{
 				tempF.tail = new AccessList(null, null);
 				tempF = tempF.tail;
-				Access head;
 				if(fmls.head){
-					head = new InFrame(p);
+					tempF.head = new InFrame(p);
 					p += wordSize();
 				}
 				else{
-					head = new InReg();
+					tempF.head = new InReg();
 				}
-				tempF.head = head;
 				fmls = fmls.tail;
 			}while(fmls != null);
+   		formals = formals.tail;
 	}
 	@Override
 	public Temp FP() {

@@ -25,6 +25,11 @@ public class Level {
 		return new Access(this, frame.allocLocal(escape));
     }
 	
+	public AccessList getFormals(){
+		Frame.AccessList frameFormals = frame.getFormals();
+		if(frameFormals.tail != null)return new AccessList(this, frame.getFormals().tail);
+		else return null;
+	}
 	public Access staticLink(){
 		return new Access(this, frame.getFormals().head);
 	}
@@ -36,10 +41,10 @@ public class Level {
     public Tree.Exp getFPOf( Level target ){
     	//TODO implement me
 		Level tLevel = this;
-		Tree.Exp ans = null;
 		Tree.Exp fp = new Tree.TEMP(frame.FP());
+		Tree.Exp ans = fp;
 		while(tLevel != target){
-			ans = tLevel.staticLink().acc.exp(fp);
+			ans = tLevel.staticLink().exp(fp);
 			tLevel = tLevel.parent;
 			fp = ans;
 		}

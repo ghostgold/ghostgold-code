@@ -23,8 +23,8 @@ public class Print {
   }
 
   void prStm(SEQ s, int d) {
-      indent(d); sayln("SEQ("); prStm(s.left,d+1); sayln(",");
-      prStm(s.right,d+1); say(")");
+      indent(d); sayln("SEQ("); prStm(s.left,d); sayln(",");
+      prStm(s.right,d); say(")");
   }
 
   void prStm(LABEL s, int d) {

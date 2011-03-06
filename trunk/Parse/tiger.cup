@@ -129,7 +129,7 @@ expr   ::=STRING:str0
 	   {: RESULT = new Absyn.BreakExp(break0left); :}
 	   |
 	   LET:let0 declarationlist:declist0 IN END
-	   {: RESULT = new Absyn.LetExp(let0left,declist0,null); :}
+	   {: RESULT = new Absyn.LetExp(let0left,declist0,new Absyn.SeqExp(let0left,null)); :}
 	   |
 	   LET:let0 declarationlist:declist0 IN:in0 exprseq:explist0 END
 	   {: RESULT = new Absyn.LetExp(let0left,declist0,new Absyn.SeqExp(in0left, explist0)); :}

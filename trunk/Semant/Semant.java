@@ -18,6 +18,9 @@ public class Semant
 		env.venv.put(Symbol.Symbol.symbol("print"), 
 					 new FunEntry(level, new Temp.Label("print"),
 								  new Types.RECORD(Symbol.Symbol.symbol("s"), STRING, null), VOID));
+		env.venv.put(Symbol.Symbol.symbol("printi"), 
+					 new FunEntry(level, new Temp.Label("printi"),
+								  new Types.RECORD(Symbol.Symbol.symbol("i"), INT , null), VOID));
 		env.venv.put(Symbol.Symbol.symbol("flush"),
 					 new FunEntry(level, new Temp.Label("flush"),null , VOID));
 		env.venv.put(Symbol.Symbol.symbol("getchar"), 
@@ -55,9 +58,10 @@ public class Semant
 		level = lev;
 	}
 	
-	public void transProg(Absyn.Exp exp){
+	/*	public void transProg(Absyn.Exp exp){
 		transExp(exp, null);
-	}
+		}*/
+
 
 	void error(int pos, String msg){
 		env.errorMsg.error(pos,msg);
@@ -245,6 +249,7 @@ public class Semant
 					&& !(left.ty.coerceTo(NIL) && right.ty.coerceTo(NIL)))
 				return new ExpTy(translate.createEqExp(left.exp, right.exp), INT);
 			else error(e.pos, "compare between different type");
+			//			System.out.println(left.ty.coerceTo(NIL));
 			return new ExpTy(null, INT);
 
 		case Absyn.OpExp.NE:
@@ -361,6 +366,7 @@ public class Semant
 	}
 	ExpTy transExp(Absyn.SeqExp e, Temp.Label breakLabel){
 		return transExpList(e.list, breakLabel);
+		
 	}
 	ExpTy transExpList(Absyn.ExpList list, Temp.Label breakLabel){
 		Translate.ExpList seq = new Translate.ExpList(null, null);
@@ -456,13 +462,17 @@ public class Semant
 		Translate.ExpList savedec = dec;
 		for(Absyn.DecList p = e.decs; p != null; p = p.tail){
 			Translate.Exp t = transDec(p.head, breakLabel);
-			if(t != null)
+			if(t != null){
 				dec.tail = new Translate.ExpList(t, null);
+				dec = dec.tail;
+			}
 		}
 		ExpTy body = transExp(e.body, breakLabel);
 		env.venv.endScope();
 		env.tenv.endScope();
-		return new ExpTy(translate.createLetExp(savedec.tail, body.exp), body.ty);
+		boolean ex = true;
+		if(body.ty.coerceTo(VOID))ex = false;
+		return new ExpTy(translate.createLetExp(savedec.tail, body.exp, ex), body.ty);
 	}
 	ExpTy transExp(Absyn.ArrayExp e, Temp.Label breakLabel){
 		Types.Type ty = (Types.Type)(env.tenv.get(e.typ));
@@ -512,7 +522,7 @@ public class Semant
 				return translate.createNilExp();
 			}
 			else {
-				VarEntry var = new VarEntry(level.allocLocal(e.escape), init.ty);
+				VarEntry var = new VarEntry(level.allocLocal(e.escape), ty);
 				env.venv.put(e.name, var);
 				return translate.createVarDec(var.access, init.exp, level);
 			}
@@ -547,7 +557,8 @@ public class Semant
 			Types.Type result = transTy(p.result);
 			Types.RECORD formals = transTypeField(p.params);
 			Temp.Label label = new Temp.Label();
-			Util.BoolList escape = p.params.getEscape();
+			Util.BoolList escape = null;
+			if(p.params != null)escape = p.params.getEscape();
 			Translate.Level newLevel = new Translate.Level(level, label, escape);
 			env.venv.put(p.name, new FunEntry(newLevel, label, formals, result));
 		}
@@ -555,19 +566,24 @@ public class Semant
 		for(Absyn.FunctionDec p = e; p != null; p = p.next){
 			env.venv.beginScope();
 			env.tenv.beginScope();
+			FunEntry function = (FunEntry)env.venv.get(p.name);
+			Translate.AccessList formalAccess = function.level.getFormals();
 			for(Absyn.FieldList q = p.params; q != null; q = q.tail){
 				Types.Type ty = (Types.Type)(env.tenv.get(q.typ));
-				if(ty != null)
-					env.venv.put(q.name, new VarEntry(ty));
+				if(ty != null){
+					env.venv.put(q.name, new VarEntry(formalAccess.head, ty));
+					formalAccess = formalAccess.tail;
+				}
 				else 
 					error(q.pos, "undefined type");
 			}
-			FunEntry function = (FunEntry)env.venv.get(p.name);
 			Semant newSemant = new Semant(env, translate, function.level);
 			ExpTy body = newSemant.transExp(p.body, null);
-			if(!body.ty.coerceTo(transTy(p.result)))
+			Types.Type result = transTy(p.result);
+			if(!body.ty.coerceTo(result))
 				error(p.pos, "return type of " + p.name + " different from declaration");
-			else translate.procEntryExit(function.level, body.exp);
+			if(result.coerceTo(VOID))translate.procEntryExit(function.level, body.exp, true);
+			else translate.procEntryExit(function.level, body.exp, false);
 			env.venv.endScope();
 			env.tenv.endScope();
 		}

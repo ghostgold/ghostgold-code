@@ -76,33 +76,56 @@ public class Translate{
 		return new StringRelCx(Tree.CJUMP.GE, left.unEx(), right.unEx(), level);
 	}
 	public Exp createCallExp(FunEntry func, ExpList args, Level level){
-		Tree.ExpList targs = new Tree.ExpList(level.getFPOf(func.level), null);
-		Tree.ExpList saveargs = targs;
-		while(args != null){
-			targs.tail = new Tree.ExpList(args.head.unEx(), null);
-			args = args.tail;
-			targs = targs.tail;
+		//different between system call or user func
+		if(func.level.frame.getName() == null){
+			Tree.ExpList targs = new Tree.ExpList(null, null);
+			Tree.ExpList saveargs = targs;
+			while(args != null){
+				targs.tail = new Tree.ExpList(args.head.unEx(), null);
+				args = args.tail;
+				targs = targs.tail;
+			}
+			return new Ex(level.frame.externalCall(func.label.toString(), saveargs.tail));
 		}
-		return new Ex(new Tree.CALL(new Tree.NAME(func.label), saveargs));
+		else{
+			Tree.ExpList targs = new Tree.ExpList(level.getFPOf(func.level.parent), null);
+			Tree.ExpList saveargs = targs;
+			while(args != null){
+				targs.tail = new Tree.ExpList(args.head.unEx(), null);
+				args = args.tail;
+				targs = targs.tail;
+			}
+			return new Ex(new Tree.CALL(new Tree.NAME(func.label), saveargs));
+		}
 	}
 	public Exp createExpList(ExpList e, boolean stm){
+		if(e == null)return new Ex(new Tree.CONST(0));
 		Tree.SEQ tseq = new Tree.SEQ(null, null);
 		Tree.SEQ saveseq = tseq;
 		if(stm){
-			while(e != null){
+			if(e.tail != null)
+				return new Nx(new Tree.SEQ(e.head.unNx(), createExpList(e.tail, true).unNx()));
+				/*{while(e != null){
 				tseq.right = new Tree.SEQ(e.head.unNx(), null);
 				e = e.tail;
 				tseq = (Tree.SEQ)tseq.right;
-			}
-			return new Nx(saveseq.right);
+				}*/
+			else return e.head;
 		}
 		else {
-			while(e.tail != null){
-				tseq.right = new Tree.SEQ(e.head.unNx(), null);
+			if(e.tail !=null){
+				Tree.Stm stms = e.head.unNx();
 				e = e.tail;
-				tseq = (Tree.SEQ)tseq.right;
+				while(e.tail != null){
+					stms = new Tree.SEQ(stms, e.head.unNx());
+					e = e.tail;
+
+				}
+				return new Ex(new Tree.ESEQ(stms ,e.head.unEx()));
 			}
-			return new Ex(new Tree.ESEQ(saveseq.right, e.head.unEx()));
+			else{
+				return e.head;
+			}
 		}
 	}
 	public Exp createIfThenElse(Exp test, Exp thenclause, Exp elseclause){
@@ -239,22 +262,27 @@ public class Translate{
 		return new Nx(new Tree.MOVE(var.unEx(), exp.unEx()));
 	}
 
-	public Exp createLetExp(ExpList dec, Exp body){
+	public Exp createLetExp(ExpList dec, Exp body, boolean ex){
+		if(dec == null)return body;
 		Tree.Stm stm = dec.head.unNx();
 		dec = dec.tail;
 		while(dec != null){
 			stm = new Tree.SEQ(stm, dec.head.unNx());
 			dec = dec.tail;
 		}
-		return new Ex(new Tree.ESEQ(stm, body.unEx()));
+		if(ex)return new Ex(new Tree.ESEQ(stm, body.unEx()));
+		else return new Nx(new Tree.SEQ(stm, body.unNx()));
 	}
 
 	public Exp createVarDec(Access var, Exp init, Level level){
 		return new Nx(new Tree.MOVE(var.exp(new Tree.TEMP(level.frame.FP())), init.unEx()));
 	}
-	public void procEntryExit(Level level, Exp body){
-		frags = new ProcFrag(new Tree.MOVE(new Tree.TEMP(level.frame.RV()), body.unEx()), level.frame, frags);
+	public void procEntryExit(Level level, Exp body, boolean process){
+		if(process)frags = new ProcFrag(body.unNx(), level.frame, frags);
+		else frags = new ProcFrag(new Tree.MOVE(new Tree.TEMP(level.frame.RV()), body.unEx()), level.frame, frags);
 	}
 
-
+	public Frag getResults(){
+		return frags;
+	}
 }

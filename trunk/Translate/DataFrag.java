@@ -1,6 +1,6 @@
 package Translate;
-class DataFrag extends Frag{
-	String data;
+public class DataFrag extends Frag{
+	public String data;
 	Temp.Label label;
 	DataFrag(String value, Frag next){
 		super(next);
