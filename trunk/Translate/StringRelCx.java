@@ -1,11 +1,12 @@
 package Translate;
 import Temp.Label;
-public class StringRelCx extends Exp{
+public class StringRelCx extends Cx{
 
 	int rel;
 	Tree.Exp left, right;
 	Level level;
-	public Tree.Exp unEx(){
+	/*	public Tree.Exp unEx(){
+		
 		switch(rel){
 		case Tree.CJUMP.EQ:
 			return level.frame.externalCall("stringEq", new Tree.ExpList(left,
@@ -28,13 +29,22 @@ public class StringRelCx extends Exp{
 		default:
 			return null;
 		}
-	}
+		}*/
 	public Tree.Stm unCx(Label iftrue, Label iffalse){
-		return new Tree.CJUMP(Tree.CJUMP.NE, unEx(), new Tree.CONST(0), iftrue, iffalse);
+		Tree.Stm move = new Tree.SEQ(new Tree.MOVE(new Tree.TEMP(level.frame.FORMAL(0)), left), 
+									 new Tree.MOVE(new Tree.TEMP(level.frame.FORMAL(0)), right));
+		Tree.Exp call = level.frame.externalCall("strcmp", 
+												  new Tree.ExpList(new Tree.TEMP(level.frame.FORMAL(0)),
+																   new Tree.ExpList(new Tree.TEMP(level.frame.FORMAL(1)), 
+																					null)));
+		Tree.CJUMP cjump = new Tree.CJUMP(rel, call, new Tree.CONST(0), iftrue, iffalse);
+		return new Tree.SEQ(move, cjump);
 	}
-	public Tree.Stm unNx(){
+
+	/*	public Tree.Stm unNx(){
 		return new Tree.EXP(unEx());
-	}
+		}*/
+
 	public StringRelCx(int t, Tree.Exp l, Tree.Exp r, Level lev){
 		rel = t;
 		left = l;

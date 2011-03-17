@@ -16,6 +16,8 @@ public interface Frame {
      */
     public Temp.Temp FP();
 	public Temp.Temp RV();
+	public Temp.Temp SP();
+	public Temp.Temp FORMAL(int x);
     /**
      * create a new frame the same type as current frame	
      * 	note: this method is a factory method
@@ -43,6 +45,12 @@ public interface Frame {
 	public int wordSize();
 	
 	public Tree.Exp externalCall(String func, Tree.ExpList args);
+	
+	public Temp.TempList calldefs();
+
+	public Tree.Stm procEntryExit1(Tree.Stm body);
+	
+	public Assem.InstrList procEntryExit2(Assem.InstrList body);
 	
 
 }

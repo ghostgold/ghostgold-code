@@ -198,7 +198,7 @@ public class Semant
 		switch(e.oper){
 		case Absyn.OpExp.PLUS:
 			if(left.ty.coerceTo(INT) && right.ty.coerceTo(INT))
-				return new ExpTy(translate.createPlusExp(left.exp, right.exp), INT);
+				return new ExpTy(translate.createArithExp(Tree.BINOP.PLUS, left.exp, right.exp), INT);
 			else if(!left.ty.coerceTo(INT)){
 				error(e.left.pos, "integer required");
 				return new ExpTy(null, INT);
@@ -209,7 +209,7 @@ public class Semant
 			break;
 		case Absyn.OpExp.MINUS:
 			if(left.ty.coerceTo(INT) && right.ty.coerceTo(INT))
-				return new ExpTy(translate.createMinusExp(left.exp,right.exp), INT);
+				return new ExpTy(translate.createArithExp(Tree.BINOP.MINUS, left.exp,right.exp), INT);
 			else if(!left.ty.coerceTo(INT)){
 				error(e.left.pos, "integer required");
 				return new ExpTy(null, INT);
@@ -220,7 +220,7 @@ public class Semant
 			break;
 		case Absyn.OpExp.MUL:
 			if(left.ty.coerceTo(INT) && right.ty.coerceTo(INT))
-				return new ExpTy(translate.createMulExp(left.exp, right.exp), INT);
+				return new ExpTy(translate.createArithExp(Tree.BINOP.MUL, left.exp, right.exp), INT);
 			else if(!left.ty.coerceTo(INT)){
 				error(e.left.pos, "integer required");
 				return new ExpTy(null, INT);
@@ -231,7 +231,7 @@ public class Semant
 			break;
 		case Absyn.OpExp.DIV:
 			if(left.ty.coerceTo(INT) && right.ty.coerceTo(INT))
-				return new ExpTy(translate.createDivExp(left.exp, right.exp), INT);
+				return new ExpTy(translate.createArithExp(Tree.BINOP.DIV, left.exp, right.exp), INT);
 			else if(!left.ty.coerceTo(INT)){
 				error(e.left.pos, "integer required");
 				return new ExpTy(null, INT);
@@ -242,32 +242,32 @@ public class Semant
 			break;
 		case Absyn.OpExp.EQ:
 			if(left.ty.coerceTo(INT) && right.ty.coerceTo(INT))
-				return new ExpTy(translate.createEqExp(left.exp, right.exp), INT);
+				return new ExpTy(translate.createCompareExp(Tree.CJUMP.EQ, left.exp, right.exp), INT);
 			else if(left.ty.coerceTo(STRING) && right.ty.coerceTo(STRING))
-				return new ExpTy(translate.createStringEqExp(left.exp, right.exp, level), INT);
+				return new ExpTy(translate.createStringCompareExp(Tree.CJUMP.EQ, left.exp, right.exp, level), INT);
 			else if((left.ty.coerceTo(right.ty) || right.ty.coerceTo(left.ty)) 
 					&& !(left.ty.coerceTo(NIL) && right.ty.coerceTo(NIL)))
-				return new ExpTy(translate.createEqExp(left.exp, right.exp), INT);
+				return new ExpTy(translate.createCompareExp(Tree.CJUMP.EQ, left.exp, right.exp), INT);
 			else error(e.pos, "compare between different type");
 			//			System.out.println(left.ty.coerceTo(NIL));
 			return new ExpTy(null, INT);
 
 		case Absyn.OpExp.NE:
 			if(left.ty.coerceTo(INT) && right.ty.coerceTo(INT))
-				return new ExpTy(translate.createNeExp(left.exp, right.exp), INT);
+				return new ExpTy(translate.createCompareExp(Tree.CJUMP.NE, left.exp, right.exp), INT);
 			else if(left.ty.coerceTo(STRING) && right.ty.coerceTo(STRING))
-				return new ExpTy(translate.createStringNeExp(left.exp, right.exp, level), INT);
+				return new ExpTy(translate.createStringCompareExp(Tree.CJUMP.NE, left.exp, right.exp, level), INT);
 			else if(left.ty.coerceTo(right.ty) || right.ty.coerceTo(left.ty)
 					&& !(left.ty.coerceTo(NIL) && right.ty.coerceTo(NIL)))
-				return new ExpTy(translate.createNeExp(left.exp, right.exp), INT);
+				return new ExpTy(translate.createCompareExp(Tree.CJUMP.NE, left.exp, right.exp), INT);
 			else error(e.pos, "compare between different type");
 			return new ExpTy(null, INT);
 
 		case Absyn.OpExp.LT:
 			if(left.ty.coerceTo(INT) && right.ty.coerceTo(INT))
-				return new ExpTy(translate.createLtExp(left.exp, right.exp), INT);
+				return new ExpTy(translate.createCompareExp(Tree.CJUMP.LT, left.exp, right.exp), INT);
 			else if(left.ty.coerceTo(STRING) && right.ty.coerceTo(STRING))
-				return new ExpTy(translate.createStringLtExp(left.exp, right.exp, level), INT);
+				return new ExpTy(translate.createStringCompareExp(Tree.CJUMP.LT, left.exp, right.exp, level), INT);
 			else if(!(left.ty.coerceTo(INT) || left.ty.coerceTo(STRING)))
 				error(e.left.pos, "integer or string required");
 			else if(!(right.ty.coerceTo(INT) || right.ty.coerceTo(STRING)))
@@ -278,9 +278,9 @@ public class Semant
 
 		case Absyn.OpExp.LE:
 			if(left.ty.coerceTo(INT) && right.ty.coerceTo(INT))
-				return new ExpTy(translate.createLeExp(left.exp, right.exp), INT);
+				return new ExpTy(translate.createCompareExp(Tree.CJUMP.LE, left.exp, right.exp), INT);
 			else if(left.ty.coerceTo(STRING) && right.ty.coerceTo(STRING))
-				return new ExpTy(translate.createStringLeExp(left.exp, right.exp, level), INT);
+				return new ExpTy(translate.createStringCompareExp(Tree.CJUMP.LE, left.exp, right.exp, level), INT);
 			else if(!(left.ty.coerceTo(INT) || left.ty.coerceTo(STRING)))
 				error(e.left.pos, "integer or string required");
 			else if(!(right.ty.coerceTo(INT) || right.ty.coerceTo(STRING)))
@@ -291,9 +291,9 @@ public class Semant
 
 		case Absyn.OpExp.GT:
 			if(left.ty.coerceTo(INT) && right.ty.coerceTo(INT))
-				return new ExpTy(translate.createGtExp(left.exp, right.exp), INT);
+				return new ExpTy(translate.createCompareExp(Tree.CJUMP.GT, left.exp, right.exp), INT);
 			else if(left.ty.coerceTo(STRING) && right.ty.coerceTo(STRING))
-				return new ExpTy(translate.createStringGtExp(left.exp, right.exp, level), INT);
+				return new ExpTy(translate.createStringCompareExp(Tree.CJUMP.GT, left.exp, right.exp, level), INT);
 			else if(!(left.ty.coerceTo(INT) || left.ty.coerceTo(STRING)))
 				error(e.left.pos, "integer or string required");
 			else if(!(right.ty.coerceTo(INT) || right.ty.coerceTo(STRING)))
@@ -304,9 +304,9 @@ public class Semant
 
 		case Absyn.OpExp.GE:
 			if(left.ty.coerceTo(INT) && right.ty.coerceTo(INT))
-				return new ExpTy(translate.createGeExp(left.exp, right.exp), INT);
+				return new ExpTy(translate.createCompareExp(Tree.CJUMP.GE, left.exp, right.exp), INT);
 			else if(left.ty.coerceTo(STRING) && right.ty.coerceTo(STRING))
-				return new ExpTy(translate.createStringGeExp(left.exp, right.exp, level), INT);
+				return new ExpTy(translate.createStringCompareExp(Tree.CJUMP.GE, left.exp, right.exp, level), INT);
 			else if(!(left.ty.coerceTo(INT) || left.ty.coerceTo(STRING)))
 				error(e.left.pos, "integer or string required");
 			else if(!(right.ty.coerceTo(INT) || right.ty.coerceTo(STRING)))
