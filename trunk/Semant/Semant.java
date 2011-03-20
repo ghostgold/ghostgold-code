@@ -9,7 +9,7 @@ public class Semant
 	public static final Types.STRING STRING = new Types.STRING();
 	public static final Types.VOID VOID = new Types.VOID();
 	public static final Types.RECORD UNKNOWN = new Types.RECORD(null, null, null);
-	public boolean semantError;
+	public static boolean semantError;
 	public Translate.Level level;
 	public Translate.Translate translate;
 	public void init(){
@@ -58,11 +58,6 @@ public class Semant
 		level = lev;
 	}
 	
-	/*	public void transProg(Absyn.Exp exp){
-		transExp(exp, null);
-		}*/
-
-
 	void error(int pos, String msg){
 		env.errorMsg.error(pos,msg);
 		semantError = true;
@@ -604,7 +599,11 @@ public class Semant
 		return name;
 	}
 	Types.RECORD transTy(Absyn.RecordTy e){
-		return transTypeField(e.fields);
+		Types.RECORD t = transTypeField(e.fields);
+		if(t == null)
+			return new Types.RECORD(null, null, null);
+		else return t;
+
 	}
 	Types.ARRAY transTy(Absyn.ArrayTy e){
 		Types.Type name = (Types.Type)(env.tenv.get(e.typ));

@@ -9,19 +9,21 @@ import Frame.*;
  *	write your implementation here
  */
 public class MipsFrame implements Frame{
-	private Temp.TempList L(Temp.Temp h, Temp.TempList t){
-		return new Temp.TempList(h,t);
+	private static TempList L(Temp h, TempList t){
+		return new TempList(h,t);
 	}
 
-	private Tree.TEMP TEMP(Temp t){
+	private static Tree.TEMP TEMP(Temp t){
 		return new Tree.TEMP(t);
 	}
 
 	public Label name;
 	public AccessList formals;
+	public static Temp zero = new Temp("$zero");
 	public static Temp fp = new Temp("$fp");
 	public static Temp rv = new Temp("$rv");
 	public static Temp sp = new Temp("$sp");
+	public static Temp ra = new Temp("$ra");
 	public static Temp a0 = new Temp("$a0");
 	public static Temp a1 = new Temp("$a1");
 	public static Temp a2 = new Temp("$a2");
@@ -114,10 +116,14 @@ public class MipsFrame implements Frame{
 	}
 	@Override
 	public Assem.InstrList procEntryExit2(Assem.InstrList body){
-		if(a == null)return b;
-		else return body.append(new InstrList(new Assem.OPER("", null, returnSink), null));
+		if(body == null)return new Assem.InstrList(new Assem.OPER("", null, returnsink), null);
+		else body.append(new Assem.InstrList(new Assem.OPER("", null, returnsink), null));
+		return body;
 	}
-
+	@Override
+	public Assem.InstrList codegen(Tree.Stm stm){
+		return (new Codegen(this)).codegen(stm);
+	}
 	@Override
 	public Temp FP() {
 		return fp;
@@ -144,7 +150,7 @@ public class MipsFrame implements Frame{
 	public TempList calldefs(){
 		return null;
 	}
-	@Override
-
-
+	public Temp ZERO(){
+		return zero;
+	}
 }

@@ -6,8 +6,9 @@ public class InstrList {
   public InstrList(Instr h, InstrList t) {
     head=h; tail=t;
   }
-	public append(InstrList x){
-		if(tail = null)tail = x;
+	public void append(InstrList x){
+		if(tail == null)tail = x;
 		else tail.append(x);
+
 	}
 }

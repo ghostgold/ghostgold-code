@@ -2,7 +2,7 @@ package Temp;
 
 public class Temp  {
    private static int count;
-   private int num;
+   public int num;
 	private String name = "t";
 	public String toString() {if(name.equals("t"))return "t" + num;else return name;}
    public Temp() { 
@@ -10,6 +10,8 @@ public class Temp  {
    }
 	public Temp(String n){
 		name = n;
+	   num = count++;
+	   
 	}
 }
 

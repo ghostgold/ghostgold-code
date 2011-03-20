@@ -29,15 +29,54 @@ public class Main {
 		semant.init();
 		ExpTy total = semant.transExp(exp, null);
 		Tree.Print irPrinter = new Tree.Print(System.out);
+		Temp.TempMap defaultMap = new Temp.DefaultMap();
+		
 		for(Translate.Frag f = semant.translate.getResults(); f != null; f = f.next ){
 			if(f instanceof Translate.DataFrag){
 				System.out.println(((Translate.DataFrag)f).data);
 			}
-			else irPrinter.prStm(((Translate.ProcFrag)f).body);
+			else {
+				Tree.Stm stm = ((Translate.ProcFrag)f).body;
+				//				irPrinter.prStm(stm);
+				Frame.Frame funcframe= ((Translate.ProcFrag)f).frame;
+				funcframe.procEntryExit1(stm);
+				//				Tree.StmList stmlist = Canon.Canon(stm);
+				Canon.TraceSchedule trace = new Canon.TraceSchedule(new Canon.BasicBlocks(Canon.Canon.linearize(stm)));
+				Tree.StmList  stmlist = trace.stms;
+				//				irPrinter.prStm(stmlist.head);
+				Assem.InstrList assem = funcframe.codegen(stmlist.head);			
+				while(stmlist != null){		
+					irPrinter.prStm(stmlist.head);
+					assem.append(funcframe.codegen(stmlist.head));
+					stmlist = stmlist.tail;
+				} 
+				while(assem != null){
+					System.out.println(assem.head.format(defaultMap));
+					assem = assem.tail;
+				}
+			}
 			System.out.println();
 		}
 		irPrinter.prStm(total.exp.unNx());
-		if(semant.semantError){
+		Tree.Stm stm = total.exp.unNx();
+		Frame.Frame funcframe= topFrame;
+		funcframe.procEntryExit1(stm);
+		//				Tree.StmList stmlist = Canon.Canon(stm);
+		Canon.TraceSchedule trace = new Canon.TraceSchedule(new Canon.BasicBlocks(Canon.Canon.linearize(stm)));
+		Tree.StmList  stmlist = trace.stms;
+		Assem.InstrList assem = funcframe.codegen(stmlist.head);			
+		stmlist = stmlist.tail;
+		while(stmlist != null){
+			//			irPrinter.prStm(stmlist.head);
+			assem.append(funcframe.codegen(stmlist.head));
+			stmlist = stmlist.tail;
+		}
+		while(assem != null){
+			System.out.println(assem.head.format(defaultMap));
+			assem = assem.tail;
+		}
+
+		if(Semant.semantError){
 			System.exit(1);
 		}
 		return;

@@ -17,7 +17,9 @@ public interface Frame {
     public Temp.Temp FP();
 	public Temp.Temp RV();
 	public Temp.Temp SP();
+	public Temp.Temp ZERO();
 	public Temp.Temp FORMAL(int x);
+
     /**
      * create a new frame the same type as current frame	
      * 	note: this method is a factory method
@@ -52,5 +54,5 @@ public interface Frame {
 	
 	public Assem.InstrList procEntryExit2(Assem.InstrList body);
 	
-
+	public Assem.InstrList codegen(Tree.Stm stm);
 }
