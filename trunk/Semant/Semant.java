@@ -125,7 +125,7 @@ public class Semant
 		}
 	}
 
-	ExpTy transExp(Absyn.Exp e, Temp.Label breakLabel){
+	public ExpTy transExp(Absyn.Exp e, Temp.Label breakLabel){
 		if(e instanceof Absyn.VarExp)return transExp((Absyn.VarExp)e, breakLabel);
 		else if(e instanceof Absyn.NilExp)return transExp((Absyn.NilExp)e, breakLabel);
 		else if(e instanceof Absyn.IntExp)return transExp((Absyn.IntExp)e, breakLabel);

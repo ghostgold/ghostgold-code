@@ -1,10 +1,51 @@
 package RegAlloc;
-import Graph.Node;
-import Graph.Graph;
-
-abstract public class InterferenceGraph extends Graph {
-   abstract public Node tnode(Temp.Temp temp);
-   abstract public Temp.Temp gtemp(Node node);
-   abstract public MoveList moves();
-   public int spillCost(Node node) {return 1;}
+import Graph.*;
+public class InterferenceGraph extends Graph {
+	Util.NodeTempMap nodeTemp = new Util.NodeTempMap();
+	java.util.Set<Edge> adjSet = new java.util.HashSet();
+	public InterferenceGraph(FlowGraph.FlowGraph flow){
+		for(NodeList nodes = flow.nodes(); nodes != null; nodes = nodes.tail ){
+			Temp.TempList def = flow.def(nodes.head);
+			while(def != null){
+				if(tnode(def.head) == null)
+					addBind(newNode(), def.head);
+				def = def.tail;
+			}
+			Temp.TempList use = flow.use(nodes.head);
+			while(use != null){
+				if(tnode(use.head) == null)
+					addBind(newNode(), use.head);
+				use = use.tail;
+			}
+		}
+	}
+	public Node tnode(Temp.Temp temp){
+		return nodeTemp.tnode(temp);
+	}
+	public Temp.Temp gtemp(Node node){
+		return nodeTemp.gtemp(node);
+	}
+	public MoveList moves(){
+		return null;
+	}
+	public void addBind(Node node, Temp.Temp temp){
+		nodeTemp.put(node, temp);
+	}
+	public void addEdge(Node a, Node b){
+		adjSet.add(new Edge(a,b));
+		adjSet.add(new Edge(b,a));
+		super.addEdge(a, b);
+		super.addEdge(b, a);
+	}
+	public void addEdge(Temp.Temp a, Temp.Temp b){
+		addEdge(tnode(a), tnode(b));
+	}
+	public boolean queryEdge(Node a, Node b){
+		return adjSet.contains(new Edge(a,b));
+	}
+	public void newNode(Temp.Temp t){
+		if(tnode(t) == null)
+			addBind(newNode(), t);
+	}
+	public int spillCost(Node node) {return 1;}
 }

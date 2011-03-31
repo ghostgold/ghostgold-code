@@ -112,6 +112,13 @@ public class MipsFrame implements Frame{
 			formalReg++;
 			tAccess = tAccess.tail;
 		}
+		TempList savereg = calleeSaves();
+		while(savereg != null){
+			Temp save = new Temp();
+			body = new Tree.SEQ(new Tree.MOVE(TEMP(save), TEMP(savereg.head)),body);
+			body = new Tree.SEQ(body, new Tree.MOVE(TEMP(savereg.head), TEMP(save)));
+			savereg = savereg.tail;
+		}
 		return body;
 	}
 	@Override
@@ -150,7 +157,17 @@ public class MipsFrame implements Frame{
 	public TempList calldefs(){
 		return null;
 	}
+	@Override
+	public TempList calleeSaves(){
+		return calleesaves;
+	}
+	@Override
 	public Temp ZERO(){
 		return zero;
+	}
+	@Override
+	public TempList registers(){
+		//todo
+		return null;
 	}
 }

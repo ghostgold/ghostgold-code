@@ -27,7 +27,8 @@ public class AssemFlowGraph extends FlowGraph {
 		while(nodeList != null){
 			Instr instr = (Instr)nodeToInstr.get(nodeList.head);
 			Targets targetsLabels = instr.jumps();
-			if(targetsLabels != null){
+			
+			if(targetsLabels != null && !instr.assem.equals("jal")){
 				Temp.LabelList labels = targetsLabels.labels;
 				while(labels != null){
 					Node targetNode = (Node)labelToNode.get(labels.head);

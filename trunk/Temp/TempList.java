@@ -67,32 +67,40 @@ public class TempList {
 		}
 		else return this.clone();
 	}
-	public void add(Temp t){
+	public TempList add(Temp t){
 		TempList a = this;
 		TempList pre = null;
 		while(a != null && a.head.num < t.num ){
 			pre = a;
 			a = a.tail;
 		}
-		if(a != null && a.head.num == t.num)return;
+		if(a != null && a.head.num == t.num)return this;
 		if(pre == null){
 			tail = new TempList(head, tail);
 			head = t;
 		}
 		else
 			pre.tail = new TempList(t, a);
+		return this;
 	}
-	public void remove(Temp t){
+	public TempList remove(Temp t){
 		TempList a = this;
 		TempList pre = null;
 		while(a != null && a.head.num < t.num){
 			pre = a;
 			a = a.tail;
 		}
-		if(a == null)return;
+		if(a == null)return this;
 		if(a.head.num == t.num){
-			pre.tail = a.tail;
+			if(pre != null){
+				pre.tail = a.tail;
+				return this;
+			}
+			else {
+				return a.tail;
+			}
 		}
+		return this;
 	}
 	public TempList clone(){
 		if(tail != null)
