@@ -61,6 +61,7 @@ public class FindEscape{
 		else if(e instanceof Absyn.BreakExp) traverseExp(depth, (Absyn.BreakExp)e);
 		else if(e instanceof Absyn.LetExp) traverseExp(depth, (Absyn.LetExp)e);
 		else if(e instanceof Absyn.ArrayExp) traverseExp(depth, (Absyn.ArrayExp)e);
+		else throw new Error("traverseExp");
 	}
 	void traverseExp(int depth, Absyn.VarExp e){
 		traverseVar(depth, e.var);
@@ -74,7 +75,7 @@ public class FindEscape{
 	void traverseExp(int depth, Absyn.CallExp e){
 		traverseExpList(depth, e.args);
 	}
-	void traverseExpList(int depth, Absyn.OpExp e){
+	void traverseExp(int depth, Absyn.OpExp e){
 		traverseExp(depth, e.left);
 		traverseExp(depth, e.right);
 	}

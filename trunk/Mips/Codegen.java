@@ -92,7 +92,7 @@ public class Codegen {
 						return;
 					}
 					if(binop.right instanceof Tree.CONST){
-						emit(new Assem.OPER("addi `d0 `s0 " + (-(((Tree.CONST)right).value)),
+						emit(new Assem.OPER("subi `d0 `s0 " + (-(((Tree.CONST)right).value)),
 											L(dst, null), L(munchExp(binop.left), null)));
 						return;
 					}
@@ -102,6 +102,60 @@ public class Codegen {
 				}
 				emit (new Assem.OPER(op + " `d0 `s0 `s1",L(dst,null), 
 									 L(munchExp(binop.left),L(munchExp(binop.right),null))));
+				return;
+			}
+			if(s.src instanceof Tree.MEM){
+				Tree.MEM mem = (Tree.MEM)s.src;
+				if(mem.exp instanceof Tree.BINOP){
+					Tree.BINOP binop = (Tree.BINOP)mem.exp;
+					if(binop.binop == Tree.BINOP.PLUS){
+						Tree.Exp left = binop.left;
+						Tree.Exp right = binop.right;
+						if(binop.left instanceof Tree.CONST && binop.right instanceof Tree.CONST){
+							emit(new Assem.OPER("lw `d0 " + (((Tree.CONST)left).value + ((Tree.CONST)right).value) + "($zero)",
+												L(dst, null), null));
+							return;
+						}
+						if(binop.left instanceof Tree.CONST){
+							emit(new Assem.OPER("lw `d0 " + ((Tree.CONST)left).value + "(`s0)", 
+												L(dst, null), L(munchExp(binop.right), null)));
+							return;
+						}
+						if(binop.right instanceof Tree.CONST){
+							emit(new Assem.OPER("lw `d0 " + ((Tree.CONST)right).value + "(`s0)", 
+												L(dst, null), L(munchExp(binop.left), null)));
+							return;
+						}
+					}
+					if(binop.binop == Tree.BINOP.MINUS){
+						Tree.Exp left = binop.left;
+						Tree.Exp right = binop.right;
+						if(binop.left instanceof Tree.CONST && binop.right instanceof Tree.CONST){
+							emit(new Assem.OPER("lw `d0 " + (((Tree.CONST)left).value - ((Tree.CONST)right).value) + "($zero)", 
+												L(dst, null), null));
+							return;
+						}
+						if(binop.right instanceof Tree.CONST){
+							emit(new Assem.OPER("lw `d0 " + (-((Tree.CONST)right).value) + "(`s0)", 
+												L(dst, null), L(munchExp(binop.left), null)));
+							return;
+						}
+					}
+				}
+				if(mem.exp instanceof Tree.CONST){
+					emit(new Assem.OPER("lw `d0 " + ((Tree.CONST)mem.exp).value + "($zero)", 
+										L(dst,null), null));
+					return;
+				} 		
+				emit(new Assem.OPER("lw `d0 0(`s0)", L(dst, null), L(munchExp(mem.exp), null)));
+				return;
+			}
+			if(s.src instanceof Tree.CONST){
+				emit(new Assem.OPER("li `d0 "+ ((Tree.CONST)s.src).value, L(dst,null), null));
+				return;
+			}
+			if(s.src instanceof Tree.NAME){
+				emit(new Assem.OPER("la `d0 "+ ((Tree.NAME)s.src).label.toString(), L(dst,null), null));
 				return;
 			}
 			emit(new Assem.MOVE("move `d0 `s0",dst, munchExp(s.src)));
@@ -225,7 +279,7 @@ public class Codegen {
 			emit(new Assem.OPER("lw `d0 " + ((Tree.CONST)mem.exp).value + "($zero)", 
 								L(r,null), null));
 			return r;
-		}
+		} 
 		emit(new Assem.OPER("lw `d0 0(`s0)", L(r,null), L(munchExp(mem.exp),null)));
 		return r;
 	}

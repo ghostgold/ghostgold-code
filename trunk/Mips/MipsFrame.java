@@ -21,8 +21,9 @@ public class MipsFrame implements Frame{
 	public AccessList formals;
 	public static Temp zero = new Temp("$zero");
 	public static Temp fp = new Temp("$fp");
-	public static Temp rv = new Temp("$rv");
 	public static Temp sp = new Temp("$sp");
+	public static Temp v0 = new Temp("$v0");
+	public static Temp v1 = new Temp("$v1");
 	public static Temp ra = new Temp("$ra");
 	public static Temp a0 = new Temp("$a0");
 	public static Temp a1 = new Temp("$a1");
@@ -36,7 +37,22 @@ public class MipsFrame implements Frame{
 	public static Temp s5 = new Temp("$s5");
 	public static Temp s6 = new Temp("$s6");
 	public static Temp s7 = new Temp("$s7");
+	public static Temp t0 = new Temp("$t0");
+	public static Temp t1 = new Temp("$t1");
+	public static Temp t2 = new Temp("$t2");
+	public static Temp t3 = new Temp("$t3");
+	public static Temp t4 = new Temp("$t4");
+	public static Temp t5 = new Temp("$t5");
+	public static Temp t6 = new Temp("$t6");
+	public static Temp t7 = new Temp("$t7");
+	public static Temp t8 = new Temp("$t8");
+	public static Temp t9 = new Temp("$t9");
+	public static Temp k0 = new Temp("$k0");
+	public static Temp k1 = new Temp("$k1");
+	public static Temp gp = new Temp("$gp");
+
 	public static TempList calleesaves = L(s0, L (s1, L(s2, L(s3, L(s4, L(s5, L(s6, L(s7, null))))))));
+	public static TempList callersaves = L(t0, L(t1, L (t2, L(t3, L(t4, L(t5, L(t6, L(t7, L(t8, L(t9,null))))))))));
 	public static TempList returnsink = L(zero, L(ra, L(sp, calleesaves)));
 
 	int allocPoint = -wordSize();//local varival begin at -4;
@@ -137,7 +153,7 @@ public class MipsFrame implements Frame{
 	}
 	@Override
 	public Temp RV() {
-		return rv;
+		return v0;
 	}
 	@Override
 	public Temp SP(){

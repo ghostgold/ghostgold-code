@@ -156,7 +156,7 @@ public class Translate{
 	}
 
 	public Exp createArrayExp(Exp sizeF, Exp init, Absyn.Exp initAbsyn, Level level){
-		if(initAbsyn instanceof Absyn.ArrayExp || initAbsyn instanceof Absyn.RecordExp){
+	    /*		if(initAbsyn instanceof Absyn.ArrayExp || initAbsyn instanceof Absyn.RecordExp){
 			Tree.Stm stm;
 			Temp.Temp size = new Temp.Temp();
 			Temp.Temp base = new Temp.Temp();
@@ -188,8 +188,8 @@ public class Translate{
 			stm = new Tree.SEQ(stm, new Tree.JUMP(begin));
 			stm = new Tree.SEQ(stm, new Tree.LABEL(finish));
 			return new Ex(new Tree.ESEQ(stm, new Tree.TEMP(base)));
-		}
-		else {
+			}*/
+	    //		else {
 			Tree.Stm stm;
 			Temp.Temp size = new Temp.Temp();
 			Temp.Temp base = new Temp.Temp();
@@ -224,7 +224,7 @@ public class Translate{
 			stm = new Tree.SEQ(stm, new Tree.JUMP(begin));
 			stm = new Tree.SEQ(stm, new Tree.LABEL(finish));
 			return new Ex(new Tree.ESEQ(stm, new Tree.TEMP(base)));
-		}
+			//	}
 		
 	}
 	public Exp createWhileExp(Exp test, Exp body, Temp.Label done){
