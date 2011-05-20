@@ -1,7 +1,7 @@
 package Translate;
 public class DataFrag extends Frag{
 	public String data;
-	Temp.Label label;
+	public Temp.Label label;
 	DataFrag(String value, Frag next){
 		super(next);
 		data = value;

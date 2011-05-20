@@ -8,9 +8,9 @@ public class Level {
     /** parent level */
     public Level        parent;
 	
-	public Level(Level p, Temp.Label n, BoolList f){
+	public Level(Level p, Temp.Label n, BoolList f, int out){
 		parent = p;
-		frame = p.frame.newFrame(n, new BoolList(true, f));
+		frame = p.frame.newFrame(n, new BoolList(true, f), out);
 	}
 	
 	public Level(Frame.Frame f){

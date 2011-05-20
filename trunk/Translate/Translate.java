@@ -42,8 +42,9 @@ public class Translate{
 	}
 	public Exp createCallExp(FunEntry func, ExpList args, Level level){
 		//different between system call or user func
-		
-		if(func.level.frame.getName() == null){
+
+		if(func.level.frame.getName().toString().equals("main")){
+
 			Tree.ExpList argsTreeExp = null;
 			Tree.ExpList argsPoint = null;
 			Tree.Stm moveReg = null;
@@ -66,7 +67,7 @@ public class Translate{
 			/*			if(func.result.actual() instanceof Types.VOID)
 						return new Nx(new Tree.SEQ(moveReg, level.frame.externalCall(func.label.toString(), argsTreeExp)));
 			else */
-				return new Ex(new Tree.ESEQ(moveReg, level.frame.externalCall(func.label.toString(), argsTreeExp)));
+			return new Ex(new Tree.ESEQ(moveReg, level.frame.externalCall(func.label.toString(), argsTreeExp)));
 		}
 		else{
 			Tree.ExpList argsTreeExp = new Tree.ExpList(level.getFPOf(func.level.parent), null);
@@ -138,7 +139,7 @@ public class Translate{
 		Tree.Stm stm;
 		Temp.Temp base = new Temp.Temp();
 		Temp.Temp point = new Temp.Temp();
-		stm = new Tree.MOVE(new Tree.TEMP(level.frame.FORMAL(0)), new Tree.CONST(count));
+		stm = new Tree.MOVE(new Tree.TEMP(level.frame.FORMAL(0)), new Tree.CONST(count*4));
 		stm = new Tree.SEQ(stm, new Tree.MOVE(new Tree.TEMP(base), 
 											  level.frame.externalCall("malloc", 
 																	   new Tree.ExpList(new Tree.TEMP(level.frame.FORMAL(0)), null))));
@@ -199,16 +200,15 @@ public class Translate{
 			Temp.Label begin = new Temp.Label();
 			Temp.Label finish = new Temp.Label();
 			
-			stm = new Tree.MOVE(new Tree.TEMP(size), sizeF.unEx());
-			stm = new Tree.SEQ(stm, new Tree.MOVE(new Tree.TEMP(initValue), init.unEx()));
+
+			stm = new Tree.MOVE(new Tree.TEMP(size), new Tree.BINOP(Tree.BINOP.MUL, sizeF.unEx(),new Tree.CONST(level.frame.wordSize())));
 			stm = new Tree.SEQ(stm, new Tree.MOVE(new Tree.TEMP(level.frame.FORMAL(0)), new Tree.TEMP(size)));
 			stm = new Tree.SEQ(stm, new Tree.MOVE(new Tree.TEMP(base), 
 					   level.frame.externalCall("malloc", 
 												new Tree.ExpList(new Tree.TEMP(level.frame.FORMAL(0)), null))));
+			stm = new Tree.SEQ(stm, new Tree.MOVE(new Tree.TEMP(initValue), init.unEx()));
 			Tree.Exp left = new Tree.BINOP(Tree.BINOP.PLUS, 
-										   new Tree.BINOP(Tree.BINOP.MUL,
-														  new Tree.CONST(level.frame.wordSize()),
-														  new Tree.TEMP(size)), 
+										   new Tree.TEMP(size), 
 										   new Tree.TEMP(base));
 			stm = new Tree.SEQ(stm, new Tree.MOVE(new Tree.TEMP(end), left));
 			stm = new Tree.SEQ(stm , new Tree.MOVE(new Tree.TEMP(point), new Tree.TEMP(base)));

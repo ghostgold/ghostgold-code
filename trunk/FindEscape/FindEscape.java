@@ -45,108 +45,145 @@ public class FindEscape{
 		traverseExp(depth, v.index);
 	}
 
-	void traverseExp(int depth, Absyn.Exp e){
-		if(e instanceof Absyn.VarExp) traverseExp(depth, (Absyn.VarExp)e);
-		else if(e instanceof Absyn.NilExp) traverseExp(depth, (Absyn.NilExp)e);
-		else if(e instanceof Absyn.IntExp) traverseExp(depth, (Absyn.IntExp)e);
-		else if(e instanceof Absyn.StringExp) traverseExp(depth, (Absyn.StringExp)e);
-		else if(e instanceof Absyn.CallExp) traverseExp(depth, (Absyn.CallExp)e);
-		else if(e instanceof Absyn.OpExp) traverseExp(depth, (Absyn.OpExp)e);
-		else if(e instanceof Absyn.RecordExp) traverseExp(depth, (Absyn.RecordExp)e);
-		else if(e instanceof Absyn.SeqExp) traverseExp(depth, (Absyn.SeqExp)e);
-		else if(e instanceof Absyn.AssignExp) traverseExp(depth, (Absyn.AssignExp)e);
-		else if(e instanceof Absyn.IfExp) traverseExp(depth, (Absyn.IfExp)e);
-		else if(e instanceof Absyn.WhileExp) traverseExp(depth, (Absyn.WhileExp)e);
-		else if(e instanceof Absyn.ForExp) traverseExp(depth, (Absyn.ForExp)e);
-		else if(e instanceof Absyn.BreakExp) traverseExp(depth, (Absyn.BreakExp)e);
-		else if(e instanceof Absyn.LetExp) traverseExp(depth, (Absyn.LetExp)e);
-		else if(e instanceof Absyn.ArrayExp) traverseExp(depth, (Absyn.ArrayExp)e);
+	public int traverseExp(int depth, Absyn.Exp e){
+		if(e instanceof Absyn.VarExp) return traverseExp(depth, (Absyn.VarExp)e);
+		else if(e instanceof Absyn.NilExp) return traverseExp(depth, (Absyn.NilExp)e);
+		else if(e instanceof Absyn.IntExp) return traverseExp(depth, (Absyn.IntExp)e);
+		else if(e instanceof Absyn.StringExp) return traverseExp(depth, (Absyn.StringExp)e);
+		else if(e instanceof Absyn.CallExp) return traverseExp(depth, (Absyn.CallExp)e);
+		else if(e instanceof Absyn.OpExp) return traverseExp(depth, (Absyn.OpExp)e);
+		else if(e instanceof Absyn.RecordExp) return traverseExp(depth, (Absyn.RecordExp)e);
+		else if(e instanceof Absyn.SeqExp) return traverseExp(depth, (Absyn.SeqExp)e);
+		else if(e instanceof Absyn.AssignExp) return traverseExp(depth, (Absyn.AssignExp)e);
+		else if(e instanceof Absyn.IfExp) return traverseExp(depth, (Absyn.IfExp)e);
+		else if(e instanceof Absyn.WhileExp) return traverseExp(depth, (Absyn.WhileExp)e);
+		else if(e instanceof Absyn.ForExp) return traverseExp(depth, (Absyn.ForExp)e);
+		else if(e instanceof Absyn.BreakExp) return traverseExp(depth, (Absyn.BreakExp)e);
+		else if(e instanceof Absyn.LetExp) return traverseExp(depth, (Absyn.LetExp)e);
+		else if(e instanceof Absyn.ArrayExp) return traverseExp(depth, (Absyn.ArrayExp)e);
 		else throw new Error("traverseExp");
 	}
-	void traverseExp(int depth, Absyn.VarExp e){
+	int traverseExp(int depth, Absyn.VarExp e){
 		traverseVar(depth, e.var);
+		return 0;
 	}
-	void traverseExp(int depth, Absyn.NilExp e){
+	int traverseExp(int depth, Absyn.NilExp e){
+		return 0;
 	}
-	void traverseExp(int depth, Absyn.IntExp e){
+	int traverseExp(int depth, Absyn.IntExp e){
+		return 0;
 	}
-	void traverseExp(int depth, Absyn.StringExp e){
+	int traverseExp(int depth, Absyn.StringExp e){
+		return 0;
 	}
-	void traverseExp(int depth, Absyn.CallExp e){
+	int traverseExp(int depth, Absyn.CallExp e){
+		Absyn.ExpList args = e.args;
+		int size = 0;
+		while(args != null){
+			args = args.tail;
+			size ++;
+		}
 		traverseExpList(depth, e.args);
+		return size;
 	}
-	void traverseExp(int depth, Absyn.OpExp e){
-		traverseExp(depth, e.left);
-		traverseExp(depth, e.right);
+	int traverseExp(int depth, Absyn.OpExp e){
+		int x = traverseExp(depth, e.left);
+		int y = traverseExp(depth, e.right);
+		return (x>y?x:y);
 	}
-	void traverseExp(int depth, Absyn.RecordExp e){
+	int traverseExp(int depth, Absyn.RecordExp e){
 		Absyn.FieldExpList fel = e.fields;
+		int size = 0;
 		while(fel != null){
-			traverseExp(depth, fel.init);
+			int t = traverseExp(depth, fel.init);
 			fel = fel.tail;
+			if(t > size)size = t;
 		}
+		return size;
 	}
-	void traverseExp(int depth, Absyn.SeqExp e){
-		traverseExpList(depth, e.list);
+	int traverseExp(int depth, Absyn.SeqExp e){
+		return traverseExpList(depth, e.list);
 	}
-	void traverseExpList(int depth, Absyn.ExpList e){
+	int traverseExpList(int depth, Absyn.ExpList e){
+		int size = 0;
 		while(e != null){
-			traverseExp(depth, e.head);
+			int t = traverseExp(depth, e.head);
 			e = e.tail;
+			if(t > size)size = t;
 		}
+		return size;
 	}
-	void traverseExp(int depth, Absyn.AssignExp e){
+	int traverseExp(int depth, Absyn.AssignExp e){
 		traverseVar(depth, e.var);
-		traverseExp(depth, e.exp);
+		return traverseExp(depth, e.exp);
 	}
-	void traverseExp(int depth, Absyn.IfExp e){
-		traverseExp(depth, e.test);
-		traverseExp(depth, e.thenclause);
-		if(e.elseclause != null)traverseExp(depth, e.elseclause);
+	int traverseExp(int depth, Absyn.IfExp e){
+		int t;
+		int size;
+		size = traverseExp(depth, e.test);
+		t = traverseExp(depth, e.thenclause);
+		if(t > size)size = t;
+		if(e.elseclause != null)t = traverseExp(depth, e.elseclause);
+		if(t > size)size = t;
+		return size;
 	}
-	void traverseExp(int depth, Absyn.WhileExp e){
-		traverseExp(depth, e.test);
-		traverseExp(depth, e.body);
+	int traverseExp(int depth, Absyn.WhileExp e){
+		int x = traverseExp(depth, e.test);
+		int y = traverseExp(depth, e.body);
+		return (x>y?x:y);
 	}
-	void traverseExp(int depth, Absyn.ForExp e){
-		traverseDec(depth, e.var);
-		traverseExp(depth, e.hi);
-		traverseExp(depth, e.body);
+	int traverseExp(int depth, Absyn.ForExp e){
+		int x = traverseDec(depth, e.var);
+		int y = traverseExp(depth, e.hi);
+		int z = traverseExp(depth, e.body);
+		if(x >= y && x >=z)return x;
+		if(y >= x && y >=z)return y;
+		return z;
 	}
-	void traverseExp(int depth, Absyn.BreakExp e){
+	int traverseExp(int depth, Absyn.BreakExp e){
+		return 0;
 	}
-	void traverseExp(int depth, Absyn.LetExp e){
+	int traverseExp(int depth, Absyn.LetExp e){
 		Absyn.DecList dl = e.decs;
+		int size = 0;
 		while(dl != null){
-			traverseDec(depth, dl.head);
+			int t = traverseDec(depth, dl.head);
+			if(t > size)size = t;
 			dl = dl.tail;
 		}
-		traverseExp(depth, e.body);
+		int t = traverseExp(depth, e.body);
+		if(t > size)size = t;
+		return size;
 	}
-	void traverseExp(int depth, Absyn.ArrayExp e){
-		traverseExp(depth, e.size);
-		traverseExp(depth, e.init);
+	int traverseExp(int depth, Absyn.ArrayExp e){
+		int x = traverseExp(depth, e.size);
+		int y = traverseExp(depth, e.init);
+		return (x>y?x:y);
 	}
 
-	void traverseDec(int depth, Absyn.Dec d){
-		if(d instanceof Absyn.VarDec) traverseDec(depth, (Absyn.VarDec)d);
-		else if(d instanceof Absyn.FunctionDec) traverseDec(depth, (Absyn.FunctionDec)d);
-		else if(d instanceof Absyn.TypeDec) traverseDec(depth, (Absyn.TypeDec)d);
+	int traverseDec(int depth, Absyn.Dec d){
+		if(d instanceof Absyn.VarDec)return  traverseDec(depth, (Absyn.VarDec)d);
+		else if(d instanceof Absyn.FunctionDec)return traverseDec(depth, (Absyn.FunctionDec)d);
+		else if(d instanceof Absyn.TypeDec)return traverseDec(depth, (Absyn.TypeDec)d);
+		else throw new Error("traverseDec");
 	}
-	void traverseDec(int depth, Absyn.VarDec d){
-		traverseExp(depth, d.init);
+	int traverseDec(int depth, Absyn.VarDec d){
+		int size = traverseExp(depth, d.init);
 		escEnv.put(d.name, new VarEscape(depth, d));
+		return size;
 	}
-	void traverseDec(int depth, Absyn.TypeDec d){
+	int traverseDec(int depth, Absyn.TypeDec d){
+		return 0;
 	}
-	void traverseDec(int depth, Absyn.FunctionDec d){
+	int traverseDec(int depth, Absyn.FunctionDec d){
 		Absyn.FieldList fl = d.params;
 		while(fl != null){
 			escEnv.put(fl.name, new FormalEscape(depth + 1, fl));
 			fl = fl.tail;
 		}
-		traverseExp(depth + 1, d.body);
-		traverseDec(depth, d.next);
+		d.outGoing = traverseExp(depth + 1, d.body);
+		if(d.next != null)traverseDec(depth, d.next);
+		return 0;
 	}
-	public FindEscape(Absyn.Exp e){traverseExp(0, e);}
+	public FindEscape(){}
 }

@@ -12,7 +12,8 @@ public class RegAlloc implements Temp.TempMap{
 	public String tempMap(Temp.Temp t){
 		if(t.precolored())return t.toString();
 		int x = paintColor.get(interference.tnode(t)).intValue();
-		return "$t" + x;
+		//		return "$" + x;
+		return frame.getReg(x).toString();
 	}
 		
 	Set<Node> simplifyWorkList = new HashSet();
@@ -47,7 +48,12 @@ public class RegAlloc implements Temp.TempMap{
 	public RegAlloc(){
 	}
 	public void initialColor(){
-	for(int i = 0; i < regNum; i++)allColors.add(new Integer(i+8));
+		allColors.add(new Integer(0));
+		for(int i = 2; i <= 25; i ++)
+			allColors.add(new Integer(i));
+		for(int i = 29; i <=31; i++)
+			allColors.add(new Integer(i));
+		//		for(int i = 0; i < regNum; i++)allColors.add(new Integer(i+8));
 	}
 	public void alloc(InstrList instrs, int r, Frame.Frame f, boolean doSpill){
 		prog = instrs;
@@ -61,6 +67,8 @@ public class RegAlloc implements Temp.TempMap{
 		for(Temp.TempList t = frame.registers(); t != null; t = t.tail){
 			interference.newNode(t.head);
 			precolored.add(interference.tnode(t.head));
+			paintColor.put(interference.tnode(t.head), new Integer(t.head.precolor));
+			//			System.out.println(t.head.toString()+' '+interference.tnode(t.head).toString());
 		}
 		NodeList nodes  = interference.nodes();
 		for(NodeList t = nodes; t != null; t = t.tail)
@@ -68,6 +76,7 @@ public class RegAlloc implements Temp.TempMap{
 		for(NodeList t= nodes; t != null; t = t.tail)
 			moveList.put(t.head, new HashSet());
 		build();
+		//		interference.show(System.out);
 		makeWorkList();
 		while(true){
 			if(!simplifyWorkList.isEmpty())simplify();
@@ -92,6 +101,12 @@ public class RegAlloc implements Temp.TempMap{
 		}
 		for(InstrList t = instrs; t != null; t = t.tail){
 			Temp.TempList live = liveness.liveAt(t.head);
+			/*			System.out.println("liveout");
+			for(Temp.TempList l= live; l != null; l = l.tail){
+				System.out.print(l.head.toString()+" ");
+				
+				}
+				System.out.println();*/
 			if(t.head instanceof MOVE){
 				MOVE move = (MOVE)t.head;
 				Node dstNode = interference.tnode(move.dst);
@@ -112,6 +127,9 @@ public class RegAlloc implements Temp.TempMap{
 						if(def.head != l.head)
 							addEdge(interference.tnode(def.head), interference.tnode(l.head));
 			}
+			//			interference.show(System.out);
+			//			System.out.println("=============\n");
+
 		}
 		Iterator<Node> a = precolored.iterator();
 		while(a.hasNext()){

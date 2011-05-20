@@ -16,35 +16,35 @@ public class Semant
 		env.tenv.put(Symbol.Symbol.symbol("int"),INT);
 		env.tenv.put(Symbol.Symbol.symbol("string"),STRING);
 		env.venv.put(Symbol.Symbol.symbol("print"), 
-					 new FunEntry(level, new Temp.Label("print"),
+					 new FunEntry(level, new Temp.Label("print", false),
 								  new Types.RECORD(Symbol.Symbol.symbol("s"), STRING, null), VOID));
 		env.venv.put(Symbol.Symbol.symbol("printi"), 
-					 new FunEntry(level, new Temp.Label("printi"),
+					 new FunEntry(level, new Temp.Label("printi", false),
 								  new Types.RECORD(Symbol.Symbol.symbol("i"), INT , null), VOID));
 		env.venv.put(Symbol.Symbol.symbol("flush"),
-					 new FunEntry(level, new Temp.Label("flush"),null , VOID));
+					 new FunEntry(level, new Temp.Label("flush", false),null , VOID));
 		env.venv.put(Symbol.Symbol.symbol("getchar"), 
-					 new FunEntry(level, new Temp.Label("getchar"),null, STRING));
+					 new FunEntry(level, new Temp.Label("getchar", false),null, STRING));
 		env.venv.put(Symbol.Symbol.symbol("ord"), 
-					 new FunEntry(level, new Temp.Label("ord"),new Types.RECORD(Symbol.Symbol.symbol("s"), STRING, null), INT));
+					 new FunEntry(level, new Temp.Label("ord", false),new Types.RECORD(Symbol.Symbol.symbol("s"), STRING, null), INT));
 		env.venv.put(Symbol.Symbol.symbol("chr"), 
-					 new FunEntry(level, new Temp.Label("chr"),new Types.RECORD(Symbol.Symbol.symbol("i"), INT, null), STRING));
+					 new FunEntry(level, new Temp.Label("chr", false),new Types.RECORD(Symbol.Symbol.symbol("i"), INT, null), STRING));
 		env.venv.put(Symbol.Symbol.symbol("size"), 
-					 new FunEntry(level, new Temp.Label("size"),new Types.RECORD(Symbol.Symbol.symbol("s"), STRING, null), INT));
+					 new FunEntry(level, new Temp.Label("size", false),new Types.RECORD(Symbol.Symbol.symbol("s"), STRING, null), INT));
 		env.venv.put(Symbol.Symbol.symbol("substring"), 
-					 new FunEntry(level, new Temp.Label("substring"),new Types.RECORD(Symbol.Symbol.symbol("s"), STRING, 
+					 new FunEntry(level, new Temp.Label("substring",false),new Types.RECORD(Symbol.Symbol.symbol("s"), STRING, 
 								   new Types.RECORD(Symbol.Symbol.symbol("first"), INT, 
 									new Types.RECORD(Symbol.Symbol.symbol("n"), INT, null))),
 								  STRING));
 		env.venv.put(Symbol.Symbol.symbol("concat"), 
-					 new FunEntry(level, new Temp.Label("concat"), new Types.RECORD(Symbol.Symbol.symbol("s1"), STRING, 
+					 new FunEntry(level, new Temp.Label("concat", false), new Types.RECORD(Symbol.Symbol.symbol("s1"), STRING, 
 								   new Types.RECORD(Symbol.Symbol.symbol("s2"), STRING, 
 									null )),
 								  STRING));
 		env.venv.put(Symbol.Symbol.symbol("not"),
-					 new FunEntry(level, new Temp.Label("not"), new Types.RECORD(Symbol.Symbol.symbol("i"), INT, null), INT));
+					 new FunEntry(level, new Temp.Label("not", false), new Types.RECORD(Symbol.Symbol.symbol("i"), INT, null), INT));
 		env.venv.put(Symbol.Symbol.symbol("exit"),
-					 new FunEntry(level, new Temp.Label("exit"), new Types.RECORD(Symbol.Symbol.symbol("i"), INT, null), VOID));
+					 new FunEntry(level, new Temp.Label("exit", false), new Types.RECORD(Symbol.Symbol.symbol("i"), INT, null), VOID));
 		
 	}
 	public Semant(ErrorMsg.ErrorMsg err, Translate.Level lev){
@@ -551,10 +551,10 @@ public class Semant
 		for(Absyn.FunctionDec p = e; p != null; p = p.next){
 			Types.Type result = transTy(p.result);
 			Types.RECORD formals = transTypeField(p.params);
-			Temp.Label label = new Temp.Label();
+			Temp.Label label = new Temp.Label(p.name, true);
 			Util.BoolList escape = null;
 			if(p.params != null)escape = p.params.getEscape();
-			Translate.Level newLevel = new Translate.Level(level, label, escape);
+			Translate.Level newLevel = new Translate.Level(level, label, escape, p.outGoing);
 			env.venv.put(p.name, new FunEntry(newLevel, label, formals, result));
 		}
 

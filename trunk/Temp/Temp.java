@@ -3,21 +3,20 @@ package Temp;
 public class Temp  {
    private static int count;
 	public int num;
-	boolean pre;
+	public int precolor;
 	private String name = "t";
-	public String toString() {if(name.equals("t"))return "t" + num;else return name;}
+	public String toString() {if(!this.precolored())return "t" + num;else return name;}
 	public Temp() {
-		pre = false;
+		precolor = -1;
 		num=count++;
 	}
-	public Temp(String n){
-		pre = true;
+	public Temp(String n, int pre){
+		precolor = pre;
 		name = n;
 		num = count++;
-	   
 	}
 	public boolean precolored(){
-		return  pre;
+		return  (precolor>=0);
 	}
 }
 

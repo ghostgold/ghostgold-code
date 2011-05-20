@@ -92,7 +92,7 @@ public class Codegen {
 						return;
 					}
 					if(binop.right instanceof Tree.CONST){
-						emit(new Assem.OPER("subi `d0 `s0 " + (-(((Tree.CONST)right).value)),
+						emit(new Assem.OPER("addi `d0 `s0 " + (-(((Tree.CONST)right).value)),
 											L(dst, null), L(munchExp(binop.left), null)));
 						return;
 					}
@@ -225,7 +225,7 @@ public class Codegen {
 			Tree.CALL call = (Tree.CALL)e;
 			//Temp.Temp r = munchExp(call.func);
 			Temp.TempList l = munchArgs(0,call.args);
-			emit(new Assem.OPER("jal `j0 ", frame.calldefs(), l, new Temp.LabelList(((Tree.NAME)call.func).label, null)));
+			emit(new Assem.OPER("jal `j0 ", frame.calldefs(), frame.parameters(), new Temp.LabelList(((Tree.NAME)call.func).label, null)));
 			return frame.RV();
 		}
 		if(e instanceof Tree.NAME){

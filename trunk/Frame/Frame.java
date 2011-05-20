@@ -19,6 +19,7 @@ abstract public interface Frame {
 	public Temp.Temp SP();
 	public Temp.Temp ZERO();
 	public Temp.Temp FORMAL(int x);
+	public Temp.Temp getReg(int x);
 	public Temp.TempList calleeSaves();
 	public Temp.TempList registers();
     /**
@@ -32,7 +33,7 @@ abstract public interface Frame {
      * @param fmls the boolean list that indicate whether each arguments escape
      * @return the frame created
      */
-	public Frame newFrame( Temp.Label name ,  Util.BoolList fmls );
+	public Frame newFrame( Temp.Label name ,  Util.BoolList fmls , int out);
 	
 	/**
 	 * get the list of arguments passed to the frame 
@@ -50,10 +51,14 @@ abstract public interface Frame {
 	public Tree.Exp externalCall(String func, Tree.ExpList args);
 	
 	public Temp.TempList calldefs();
+	
+	public Temp.TempList parameters();
 
 	public Tree.Stm procEntryExit1(Tree.Stm body);
 	
 	public Assem.InstrList procEntryExit2(Assem.InstrList body);
 	
+	public Assem.InstrList procEntryExit3(Assem.InstrList body);
+
 	public Assem.InstrList codegen(Tree.Stm stm);
 }
