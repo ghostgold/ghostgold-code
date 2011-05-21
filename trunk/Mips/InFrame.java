@@ -12,4 +12,10 @@ public class InFrame implements Frame.Access{
 	public InFrame(int o){
 		offset = o;
 	}
+	public boolean escape(){
+		return true;
+	}
+	public int offSet(){
+		return offset;
+	}
 }

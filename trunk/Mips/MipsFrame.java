@@ -84,11 +84,11 @@ public class MipsFrame implements Frame{
 	public static Temp k1 = new Temp("$k1",27);
 	public static Temp gp = new Temp("$gp",28);
 	public static TempList parameterReg = L(a0, L(a1, L(a2, L(a3,null))));
-	public static TempList calleesaves = L(s0, L (s1, L(s2, L(s3, L(s4, L(s5, L(s6, L(s7, null))))))));
+	public static TempList calleesaves = L(s0, L (s1, L(s2, L(s3, L(s4, L(s5, L(s6, L(s7, L(ra,null)))))))));
 	public static TempList callersaves = L(t0, L(t1, L (t2, L(t3, L(t4, L(t5, L(t6, L(t7, L(t8, L(t9,null))))))))));
 	public static TempList returnsink = L(zero,L(ra, L(sp, calleesaves)));
 
-	int allocPoint = -wordSize();//local varival begin at -4;
+	int allocPoint = -2*wordSize();//local varival begin at -4;
 	int outGoing = 0;
 	@Override
 
@@ -147,22 +147,25 @@ public class MipsFrame implements Frame{
 	@Override
 	public Tree.Stm procEntryExit1(Tree.Stm body){
 		int formalReg = 0;
+		int argNum =0;
 		AccessList tAccess = formals;
+		if(body == null)body = new Tree.EXP(new Tree.CONST(0));
 		while(tAccess != null){
-			if(formalReg < 4){
-				Tree.MOVE move = new Tree.MOVE(tAccess.head.exp(TEMP(FP())), TEMP(FORMAL(formalReg)));
+			if(!tAccess.head.escape()){
+				Tree.MOVE move;
+				if(formalReg < 4){
+					move = new Tree.MOVE(tAccess.head.exp(TEMP(FP())), TEMP(FORMAL(formalReg)));
+					formalReg++;
+				}
+				else {
+					 move = new Tree.MOVE(tAccess.head.exp(TEMP(FP())), 
+												   new Tree.MEM(new Tree.BINOP(Tree.BINOP.PLUS, 
+																			   TEMP(FP()), new Tree.CONST(wordSize() * argNum))));
+				}
 				body = new Tree.SEQ(move, body);
 			}
-			else {
-				if(tAccess.head instanceof InReg){
-					Tree.MOVE move = new Tree.MOVE(tAccess.head.exp(TEMP(FP())), 
-												   new Tree.MEM(new Tree.BINOP(Tree.BINOP.PLUS, 
-																			   TEMP(FP()), new Tree.CONST(wordSize() * formalReg))));
-					body = new Tree.SEQ(move, body);
-				}
-			}
-			formalReg++;
 			tAccess = tAccess.tail;
+			argNum++;
 		}
 		TempList savereg = calleeSaves();
 		while(savereg != null){
@@ -182,13 +185,13 @@ public class MipsFrame implements Frame{
 	@Override
 	public Assem.InstrList procEntryExit3(Assem.InstrList body){
 		if(body == null)return null;
-		Temp savefp = new Temp();
-		body = new Assem.InstrList(new Assem.MOVE("move `d0 `s0", savefp, fp),
+		//		Temp savefp = new Temp();
+		body = new Assem.InstrList(new Assem.OPER("sw `s0 -4(`s1)", null, L(fp,L(sp, null))),
 								   new Assem.InstrList(new Assem.MOVE("move `d0 `s0", fp, sp), 
-													   new Assem.InstrList(new Assem.OPER("addi `d0 `s0 "+this.framesize(), L(sp,null), L(sp,null)), body)));
+													   new Assem.InstrList(new Assem.OPER("addi `d0 `s0 -"+this.framesize(), L(sp,null), L(sp,null)), body)));
 		body = new Assem.InstrList(new Assem.LABEL(name.toString()+":", name), body);
 		body.append(new Assem.InstrList(new Assem.MOVE("move `d0 `s0", sp, fp), 
-										new Assem.InstrList(new Assem.MOVE("move `d0 `s0", fp, savefp), null)));
+										new Assem.InstrList(new Assem.OPER("lw `d0 -4(`s0)", L(fp,null), L(fp,null)), null)));
 		body.append(new Assem.InstrList(new Assem.OPER("jr `s0", null, L(ra, null)), null));
 		return body;
 	}
@@ -221,7 +224,7 @@ public class MipsFrame implements Frame{
 	}
 	@Override
 	public TempList calldefs(){
-		return L(v0,L(v1,L(a0,L(a1,L(a2,L(a3,L(t0,L(t1,L(t2,L(t3,L(t4,L(t5,L(t6,L(t7,L(t8,L(t9,null))))))))))))))));
+		return L(v0,L(v1,L(a0,L(a1,L(a2,L(a3,L(t0,L(t1,L(t2,L(t3,L(t4,L(t5,L(t6,L(t7,L(t8,L(t9,L(ra,null)))))))))))))))));
 
 	}
 	@Override

@@ -7,4 +7,6 @@ public interface Access {
      * @return the IR of the variable
      */
     public Tree.Exp exp( Tree.Exp faddr );
+	public boolean escape();
+	public int offSet();
 }

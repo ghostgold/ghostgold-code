@@ -225,7 +225,8 @@ public class Codegen {
 			Tree.CALL call = (Tree.CALL)e;
 			//Temp.Temp r = munchExp(call.func);
 			Temp.TempList l = munchArgs(0,call.args);
-			emit(new Assem.OPER("jal `j0 ", frame.calldefs(), frame.parameters(), new Temp.LabelList(((Tree.NAME)call.func).label, null)));
+
+			emit(new Assem.OPER("jal `j0 ", frame.calldefs(), l, new Temp.LabelList(((Tree.NAME)call.func).label, null)));
 			return frame.RV();
 		}
 		if(e instanceof Tree.NAME){

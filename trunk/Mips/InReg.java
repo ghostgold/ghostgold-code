@@ -12,4 +12,10 @@ class InReg implements Frame.Access{
 	public InReg(){
 		temp = new Temp.Temp();
 	}
+	public boolean escape(){
+		return false;
+	}
+	public int offSet(){
+		return 0;
+	}
 }

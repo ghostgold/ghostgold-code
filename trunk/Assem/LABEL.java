@@ -9,6 +9,9 @@ public class LABEL extends Instr {
 
    public Temp.TempList use() {return null;}
    public Temp.TempList def() {return null;}
+	public void setDef(Temp.TempList d){}
+	public void  setUse(Temp.TempList s){}
+
    public Targets jumps()     {return null;}
 
 }

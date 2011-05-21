@@ -4,6 +4,8 @@ public abstract class Instr {
   public String assem;
   public abstract Temp.TempList use();
   public abstract Temp.TempList def();
+	public abstract void setUse(Temp.TempList s);
+	public abstract void setDef(Temp.TempList d);
   public abstract Targets jumps();
 
   private Temp.Temp nthTemp(Temp.TempList l, int i) {

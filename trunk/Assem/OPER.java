@@ -14,6 +14,8 @@ public class OPER extends Instr {
 
    public Temp.TempList use() {return src;}
    public Temp.TempList def() {return dst;}
+	public void setDef(Temp.TempList d){dst = d;}
+	public void setUse(Temp.TempList s){src = s;};
    public Targets jumps() {return jump;}
 
 }

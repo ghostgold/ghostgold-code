@@ -9,6 +9,9 @@ public class MOVE extends Instr {
    }
    public Temp.TempList use() {return new Temp.TempList(src,null);}
    public Temp.TempList def() {return new Temp.TempList(dst,null);}
+	public void setDef(Temp.TempList d){dst = d.head;}
+	public void setUse(Temp.TempList s){src = s.head;};
+
    public Targets jumps()     {return null;}
 
 }

@@ -22,6 +22,7 @@ abstract public interface Frame {
 	public Temp.Temp getReg(int x);
 	public Temp.TempList calleeSaves();
 	public Temp.TempList registers();
+	public int framesize();
     /**
      * create a new frame the same type as current frame	
      * 	note: this method is a factory method

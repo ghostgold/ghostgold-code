@@ -18,8 +18,9 @@ public class RegAlloc implements Temp.TempMap{
 		
 	Set<Node> simplifyWorkList = new HashSet();
 	Set<Node> freezeWorkList = new HashSet();
-	Set<Node> spillWorkList = new HashSet();
-
+	Comparator<Node> spillComparator;
+   	PriorityQueue<Node> spillWorkList;
+	
 
 	Set<Node> spilledNodes = new HashSet();
 	Set<Node> coalescedNodes = new HashSet();
@@ -64,6 +65,9 @@ public class RegAlloc implements Temp.TempMap{
 		liveness = new AssemLiveness(controlFlow);
 		interference = new InterferenceGraph(controlFlow);
 
+		spillComparator = new SpillComparator(interference);
+		spillWorkList = new PriorityQueue<Node>(10,spillComparator);
+
 		for(Temp.TempList t = frame.registers(); t != null; t = t.tail){
 			interference.newNode(t.head);
 			precolored.add(interference.tnode(t.head));
@@ -82,17 +86,85 @@ public class RegAlloc implements Temp.TempMap{
 			if(!simplifyWorkList.isEmpty())simplify();
 			else if(!workListMoves.isEmpty())coalesce();
 			else if(!freezeWorkList.isEmpty())freeze();
-			//else if(!spillWorkList.isEmpty())selectSpill(); add && spillWorkList for the line below
-			if(simplifyWorkList.isEmpty() && workListMoves.isEmpty() && freezeWorkList.isEmpty())break;
+			else if(!spillWorkList.isEmpty())selectSpill(); 
+			if(simplifyWorkList.isEmpty() && workListMoves.isEmpty() && freezeWorkList.isEmpty()&& spillWorkList.isEmpty() )break;
 		}
 		assignColors();
-		/*		if(doSpill && !spilledNode.empty()){
-			InstrList newInstrs = rewriteProgram(instrs, spillNodes, frame);
+		if(doSpill && !spilledNodes.isEmpty()){
+			InstrList newInstrs = rewriteProgram();
 			RegAlloc newAlloc = new RegAlloc();
 			newAlloc.alloc(newInstrs, regNum, frame, doSpill);
 			prog = newAlloc.getProgram();
-			paintColors = newAlloc.paintColors;
-			}*/
+			paintColor = newAlloc.paintColor;
+			interference = newAlloc.interference;
+		}
+	}
+	
+	private Temp.TempList L(Temp.Temp h, Temp.TempList t){
+		return new Temp.TempList(h,t);
+	}
+
+	InstrList rewriteProgram(){
+		Dictionary<Node, Frame.Access> tempSpillMem =new Hashtable();
+		Iterator<Node> it = spilledNodes.iterator();
+		while(it.hasNext())
+			tempSpillMem.put(it.next(), frame.allocLocal(true));
+		InstrList ins = prog;
+		while(ins != null){
+			Temp.TempList def = ins.head.def();
+			if( def != null && spilledNodes.contains(interference.tnode(def.head))){
+				Frame.Access mem = tempSpillMem.get(interference.tnode(def.head));
+				if(ins.head instanceof MOVE){
+					ins.head = new OPER("sw `s0 " + mem.offSet() +"(`s1)",null,  L(ins.head.use().head, L(frame.FP(), null)));
+				}
+				else {
+					Temp.Temp spillTemp = new Temp.Temp();
+					spillTemp.setSpillCost(-1);
+					ins.head.setDef(L(spillTemp,null));
+					ins.tail = new InstrList(new OPER("sw `s0 " + mem.offSet() +"(`s1)",null, L(spillTemp, L(frame.FP(),null))), ins.tail);
+					ins = ins.tail;
+				}
+			}
+			if(ins.tail != null){
+				if(ins.tail.head instanceof MOVE){
+					Temp.TempList use = ins.tail.head.use();
+					if(spilledNodes.contains(interference.tnode(use.head))){
+						Frame.Access mem = tempSpillMem.get(interference.tnode(use.head));
+						ins.tail.head = new OPER("lw `d0 "+mem.offSet() + "(`s0)", ins.tail.head.def(), L(frame.FP(), null) );
+					}
+				}
+				else{
+					Temp.TempList newUse = new Temp.TempList(null, null);
+					Temp.TempList saveUse = newUse;
+					for(Temp.TempList use = ins.tail.head.use(); use != null; use = use.tail){
+						if(spilledNodes.contains(interference.tnode(use.head))){
+							Frame.Access mem = tempSpillMem.get(interference.tnode(use.head));
+							Temp.Temp spillTemp = new Temp.Temp();
+							spillTemp.setSpillCost(-1);
+							if(newUse.head == null)newUse.head = spillTemp;
+							else {
+								newUse.tail = L(spillTemp,null);
+								newUse = newUse.tail;
+							}
+							ins.tail = new InstrList(new OPER("lw `d0 "+mem.offSet() + "(`s0)", L(spillTemp,null), L(frame.FP(), null) ), ins.tail);
+							ins = ins.tail;
+						}
+						else {
+							if(newUse.head == null)newUse.head = use.head;
+							else {
+								newUse.tail = L(use.head,null);
+								newUse = newUse.tail;
+							}
+						}
+
+					}
+					if(saveUse.head != null)ins.tail.head.setUse(saveUse);
+				}
+			}
+			ins = ins.tail;
+		}
+		prog.tail.tail.tail.head.assem = "addi `d0 `s0 -"+frame.framesize();
+		return prog;
 	}
 	void build(){
 		InstrList instrs = prog;
@@ -101,6 +173,11 @@ public class RegAlloc implements Temp.TempMap{
 		}
 		for(InstrList t = instrs; t != null; t = t.tail){
 			Temp.TempList live = liveness.liveAt(t.head);
+			for(Temp.TempList def = t.head.def(); def != null; def = def.tail)
+				def.head.addSpillCost(1);
+			for(Temp.TempList use = t.head.use(); use != null; use = use.tail)
+				use.head.addSpillCost(1);
+			
 			/*			System.out.println("liveout");
 			for(Temp.TempList l= live; l != null; l = l.tail){
 				System.out.print(l.head.toString()+" ");
@@ -265,7 +342,17 @@ public class RegAlloc implements Temp.TempMap{
 			simplifyWorkList.add(u);
 		}
 	}
-	
+
+	void selectSpill(){
+		Node m = spillWorkList.peek();
+		if(m != null){
+			spillWorkList.remove(m);
+			simplifyWorkList.add(m);
+			freezeMoves(m);
+		}
+		
+		
+	}
 	boolean OK(Node t, Node r){
 		return (degree.get(t).intValue()< regNum || precolored.contains(t) || interference.queryEdge(t,r));
 	}
@@ -386,6 +473,8 @@ public class RegAlloc implements Temp.TempMap{
 		if(nodeMoves(node) == null)return false;
 		else return true;
 	}
+	
+	
 	public InstrList getProgram(){
 		return prog;
 	}
