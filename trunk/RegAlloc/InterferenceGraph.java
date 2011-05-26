@@ -5,17 +5,11 @@ public class InterferenceGraph extends Graph {
 	java.util.Set<Edge> adjSet = new java.util.HashSet();
 	public InterferenceGraph(FlowGraph.FlowGraph flow){
 		for(NodeList nodes = flow.nodes(); nodes != null; nodes = nodes.tail ){
-			Temp.TempList def = flow.def(nodes.head);
-			while(def != null){
-				if(tnode(def.head) == null)
-					addBind(newNode(), def.head);
-				def = def.tail;
-			}
-			Temp.TempList use = flow.use(nodes.head);
-			while(use != null){
-				if(tnode(use.head) == null)
-					addBind(newNode(), use.head);
-				use = use.tail;
+			Temp.TempList tot = flow.tot(nodes.head);
+			while(tot != null){
+				if(tnode(tot.head) == null)
+					addBind(newNode(), tot.head);
+				tot= tot.tail;
 			}
 		}
 	}

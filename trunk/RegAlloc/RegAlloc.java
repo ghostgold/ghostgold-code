@@ -4,7 +4,7 @@ import Graph.*;
 import Assem.*;
 import java.util.*;
 public class RegAlloc implements Temp.TempMap{
-	private InstrList prog;
+	private ArrayList<BasicBlock> prog;
 	private Frame.Frame frame;
 
 	int regNum;
@@ -43,8 +43,8 @@ public class RegAlloc implements Temp.TempMap{
 	Dictionary<Node, Integer> paintColor =new Hashtable();
 	
 	HashSet<Integer> allColors = new HashSet();
-	AssemFlowGraph controlFlow; 
-	AssemLiveness liveness;
+	BlockFlowGraph controlFlow; 
+	BlockLiveness liveness;
 	InterferenceGraph interference;
 	public RegAlloc(){
 	}
@@ -56,13 +56,13 @@ public class RegAlloc implements Temp.TempMap{
 			allColors.add(new Integer(i));
 		//		for(int i = 0; i < regNum; i++)allColors.add(new Integer(i+8));
 	}
-	public void alloc(InstrList instrs, int r, Frame.Frame f, boolean doSpill){
+	public void alloc(ArrayList<BasicBlock> instrs, int r, Frame.Frame f, boolean doSpill){
 		prog = instrs;
 		frame = f;
 		regNum = r;
 		initialColor();
-		controlFlow = new AssemFlowGraph(instrs);
-		liveness = new AssemLiveness(controlFlow);
+		controlFlow = new BlockFlowGraph(instrs);
+		liveness = new BlockLiveness(controlFlow);
 		interference = new InterferenceGraph(controlFlow);
 
 		spillComparator = new SpillComparator(interference);
@@ -91,7 +91,7 @@ public class RegAlloc implements Temp.TempMap{
 		}
 		assignColors();
 		if(doSpill && !spilledNodes.isEmpty()){
-			InstrList newInstrs = rewriteProgram();
+			ArrayList<BasicBlock> newInstrs = rewriteProgram();
 			RegAlloc newAlloc = new RegAlloc();
 			newAlloc.alloc(newInstrs, regNum, frame, doSpill);
 			prog = newAlloc.getProgram();
@@ -104,108 +104,131 @@ public class RegAlloc implements Temp.TempMap{
 		return new Temp.TempList(h,t);
 	}
 
-	InstrList rewriteProgram(){
+	ArrayList<BasicBlock> rewriteProgram(){
 		Dictionary<Node, Frame.Access> tempSpillMem =new Hashtable();
 		Iterator<Node> it = spilledNodes.iterator();
 		while(it.hasNext())
 			tempSpillMem.put(it.next(), frame.allocLocal(true));
-		InstrList ins = prog;
-		while(ins != null){
-			Temp.TempList def = ins.head.def();
-			if( def != null && spilledNodes.contains(interference.tnode(def.head))){
-				Frame.Access mem = tempSpillMem.get(interference.tnode(def.head));
-				if(ins.head instanceof MOVE){
-					ins.head = new OPER("sw `s0 " + mem.offSet() +"(`s1)",null,  L(ins.head.use().head, L(frame.FP(), null)));
-				}
-				else {
-					Temp.Temp spillTemp = new Temp.Temp();
-					spillTemp.setSpillCost(-1);
-					ins.head.setDef(L(spillTemp,null));
-					ins.tail = new InstrList(new OPER("sw `s0 " + mem.offSet() +"(`s1)",null, L(spillTemp, L(frame.FP(),null))), ins.tail);
-					ins = ins.tail;
-				}
-			}
-			if(ins.tail != null){
-				if(ins.tail.head instanceof MOVE){
-					Temp.TempList use = ins.tail.head.use();
-					if(spilledNodes.contains(interference.tnode(use.head))){
-						Frame.Access mem = tempSpillMem.get(interference.tnode(use.head));
-						ins.tail.head = new OPER("lw `d0 "+mem.offSet() + "(`s0)", ins.tail.head.def(), L(frame.FP(), null) );
+		ArrayList<BasicBlock> blocks = prog;
+		for(ListIterator<BasicBlock> b = blocks.listIterator(); b.hasNext(); ){
+			BasicBlock block = b.next();
+			InstrList ins = block.instrs;
+			while(ins != null){
+				Temp.TempList def = ins.head.def();
+				if( def != null && spilledNodes.contains(interference.tnode(def.head))){
+					Frame.Access mem = tempSpillMem.get(interference.tnode(def.head));
+					if(ins.head instanceof MOVE){
+						ins.head = new OPER("sw `s0 " + mem.offSet() +"(`s1)",null,  L(ins.head.use().head, L(frame.FP(), null)));
+					}
+					else {
+						Temp.Temp spillTemp = new Temp.Temp();
+						spillTemp.setSpillCost(-1);
+						ins.head.setDef(L(spillTemp,null));
+						ins.tail = new InstrList(new OPER("sw `s0 " + mem.offSet() +"(`s1)",null, L(spillTemp, L(frame.FP(),null))), ins.tail);
+						ins = ins.tail;
 					}
 				}
-				else{
-					Temp.TempList newUse = new Temp.TempList(null, null);
-					Temp.TempList saveUse = newUse;
-					for(Temp.TempList use = ins.tail.head.use(); use != null; use = use.tail){
+				if(ins.tail != null){
+					if(ins.tail.head instanceof MOVE){
+						Temp.TempList use = ins.tail.head.use();
 						if(spilledNodes.contains(interference.tnode(use.head))){
 							Frame.Access mem = tempSpillMem.get(interference.tnode(use.head));
-							Temp.Temp spillTemp = new Temp.Temp();
-							spillTemp.setSpillCost(-1);
-							if(newUse.head == null)newUse.head = spillTemp;
-							else {
-								newUse.tail = L(spillTemp,null);
-								newUse = newUse.tail;
-							}
-							ins.tail = new InstrList(new OPER("lw `d0 "+mem.offSet() + "(`s0)", L(spillTemp,null), L(frame.FP(), null) ), ins.tail);
-							ins = ins.tail;
+							ins.tail.head = new OPER("lw `d0 "+mem.offSet() + "(`s0)", ins.tail.head.def(), L(frame.FP(), null) );
 						}
-						else {
-							if(newUse.head == null)newUse.head = use.head;
-							else {
-								newUse.tail = L(use.head,null);
-								newUse = newUse.tail;
-							}
-						}
-
 					}
-					if(saveUse.head != null)ins.tail.head.setUse(saveUse);
+					else{
+						Temp.TempList newUse = new Temp.TempList(null, null);
+						Temp.TempList saveUse = newUse;
+						for(Temp.TempList use = ins.tail.head.use(); use != null; use = use.tail){
+							if(spilledNodes.contains(interference.tnode(use.head))){
+								Frame.Access mem = tempSpillMem.get(interference.tnode(use.head));
+								Temp.Temp spillTemp = new Temp.Temp();
+								spillTemp.setSpillCost(-1);
+								if(newUse.head == null)newUse.head = spillTemp;
+								else {
+									newUse.tail = L(spillTemp,null);
+									newUse = newUse.tail;
+								}
+								ins.tail = new InstrList(new OPER("lw `d0 "+mem.offSet() + "(`s0)", L(spillTemp,null), L(frame.FP(), null) ), ins.tail);
+								ins = ins.tail;
+							}
+							else {
+								if(newUse.head == null)newUse.head = use.head;
+								else {
+									newUse.tail = L(use.head,null);
+									newUse = newUse.tail;
+								}
+							}
+
+						}
+						if(saveUse.head != null)ins.tail.head.setUse(saveUse);
+					}
 				}
+				ins = ins.tail;
 			}
-			ins = ins.tail;
+			block.setInstrs(block.instrs);
 		}
-		prog.tail.tail.tail.head.assem = "addi `d0 `s0 -"+frame.framesize();
+		prog.get(0).instrs.tail.tail.tail.head.assem = "addi `d0 `s0 -"+frame.framesize();
 		return prog;
 	}
 	void build(){
-		InstrList instrs = prog;
+		ArrayList<BasicBlock> blocks = prog;
 		for(NodeList nodes = interference.nodes(); nodes != null; nodes = nodes.tail){
 			degree.put(nodes.head, new Integer(0));
 		}
-		for(InstrList t = instrs; t != null; t = t.tail){
-			Temp.TempList live = liveness.liveAt(t.head);
-			for(Temp.TempList def = t.head.def(); def != null; def = def.tail)
-				def.head.addSpillCost(1);
-			for(Temp.TempList use = t.head.use(); use != null; use = use.tail)
-				use.head.addSpillCost(1);
-			
-			/*			System.out.println("liveout");
+		Dictionary<Assem.Instr,Set<Temp.Temp>> liveOut;
+		for(ListIterator<BasicBlock> b = blocks.listIterator(); b.hasNext();){
+			BasicBlock block = b.next();
+			for(Temp.TempList tot = block.tot(); tot != null; tot = tot.tail)
+				tot.head.addSpillCost(1);
+			Set<Temp.Temp> live = liveness.liveAt(block);
+			Iterator<Temp.Temp> l = live.iterator();
+			/*			while(l.hasNext()){
+				System.out.print(l.next().toString() + ' ');
+			}
+			System.out.println();*/
+
+		/*			System.out.println("liveout");
 			for(Temp.TempList l= live; l != null; l = l.tail){
 				System.out.print(l.head.toString()+" ");
 				
 				}
 				System.out.println();*/
-			if(t.head instanceof MOVE){
-				MOVE move = (MOVE)t.head;
-				Node dstNode = interference.tnode(move.dst);
-				Node srcNode = interference.tnode(move.src);
-				for(Temp.TempList l= live; l != null; l = l.tail){
-					if(l.head != move.dst && l.head != move.src){
-						addEdge(interference.tnode(l.head), dstNode);
+			InstrList t = block.reverseInstrs;
+			while(t != null){
+				if(t.head instanceof MOVE){
+					MOVE move = (MOVE)t.head;
+					Node dstNode = interference.tnode(move.dst);
+					Node srcNode = interference.tnode(move.src);
+					live.remove(interference.gtemp(srcNode));
+					/*					for(Temp.TempList l= live; l != null; l = l.tail){
+						if(l.head != move.dst && l.head != move.src){
+							addEdge(interference.tnode(l.head), dstNode);
+						}
+						}*/
+					Move nodeMove = new Move(dstNode, srcNode);
+					moveList.get(dstNode).add(nodeMove);
+					moveList.get(srcNode).add(nodeMove);
+					workListMoves.add(nodeMove);
+				}
+				for(Temp.TempList def = t.head.def(); def != null ; def = def.tail)
+					live.add(def.head);
+				for(Temp.TempList def = t.head.def(); def != null; def = def.tail){
+					l = live.iterator();
+					while(l.hasNext()){
+						Temp.Temp u = l.next();
+						if(def.head != u)
+							addEdge(interference.tnode(def.head), interference.tnode(u));
 					}
 				}
-				Move nodeMove = new Move(dstNode, srcNode);
-				moveList.get(dstNode).add(nodeMove);
-				moveList.get(srcNode).add(nodeMove);
-				workListMoves.add(nodeMove);
-			}
-			else{
-				for(Temp.TempList def = t.head.def(); def != null; def = def.tail)
-					for(Temp.TempList l = live; l != null; l = l.tail)
-						if(def.head != l.head)
-							addEdge(interference.tnode(def.head), interference.tnode(l.head));
-			}
 			//			interference.show(System.out);
 			//			System.out.println("=============\n");
+				for(Temp.TempList def = t.head.def(); def != null ; def = def.tail)
+					live.remove(def.head);
+				for(Temp.TempList use = t.head.use(); use != null ; use = use.tail)
+					live.add(use.head);
+				t = t.tail;
+			}
 
 		}
 		Iterator<Node> a = precolored.iterator();
@@ -475,7 +498,7 @@ public class RegAlloc implements Temp.TempMap{
 	}
 	
 	
-	public InstrList getProgram(){
+	public ArrayList<BasicBlock> getProgram(){
 		return prog;
 	}
 

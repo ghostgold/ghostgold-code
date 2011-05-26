@@ -11,4 +11,8 @@ public class InstrList {
 		else tail.append(x);
 
 	}
+	public void append(Instr x){
+		if(tail == null)tail = new InstrList(x, null);
+		else tail.append(x);
+	}
 }

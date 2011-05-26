@@ -34,7 +34,7 @@ public class Codegen {
 			return;
 		}
 		if(s instanceof Tree.JUMP){
-			emit(new Assem.OPER("j `j0", null, null, ((Tree.JUMP)s).targets));
+			emit(new Assem.JUMP("j `j0", null, null, ((Tree.JUMP)s).targets));
 			return;
 		}
 		if(s instanceof Tree.CJUMP){
@@ -48,7 +48,7 @@ public class Codegen {
 			case Tree.CJUMP.GT: branch = "bgt";break;
 			case Tree.CJUMP.GE: branch = "bge";break;
 			}
-			emit(new Assem.OPER(branch + " `s0 `s1 `j0", null, 
+			emit(new Assem.BRANCH(branch + " `s0 `s1 `j0", null, 
 								L(munchExp(cjump.left), L(munchExp(cjump.right), null)), new Temp.LabelList(cjump.iftrue, null)));
 			return;
 		}
@@ -226,7 +226,7 @@ public class Codegen {
 			//Temp.Temp r = munchExp(call.func);
 			Temp.TempList l = munchArgs(0,call.args);
 
-			emit(new Assem.OPER("jal `j0 ", frame.calldefs(), l, new Temp.LabelList(((Tree.NAME)call.func).label, null)));
+			emit(new Assem.CALL("jal `j0 ", frame.calldefs(), l, new Temp.LabelList(((Tree.NAME)call.func).label, null)));
 			return frame.RV();
 		}
 		if(e instanceof Tree.NAME){

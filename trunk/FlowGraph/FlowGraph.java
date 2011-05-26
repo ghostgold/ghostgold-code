@@ -24,6 +24,8 @@ public abstract class FlowGraph extends Graph.Graph {
 	 * The set of temporaries used by this instruction or block 
 	 */
 	public abstract TempList use(Node node);
+	
+	public abstract TempList tot(Node node);
 
 	/**
 	 * True if this node represents a <strong>move</strong> instruction,
