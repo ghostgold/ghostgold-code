@@ -206,7 +206,7 @@ public class Translate{
 			Temp.Label finish = new Temp.Label();
 			
 
-			if(size.unEx() instanceof Tree.CONST){
+			/*	if(size.unEx() instanceof Tree.CONST){
 				int sizeConst = ((Tree.CONST)(size.unEx())).value;
 				stm = new  Tree.MOVE(new Tree.TEMP(level.frame.FORMAL(0)),new Tree.CONST(sizeConst * level.frame.wordSize()));
 				stm = new Tree.SEQ(stm, new Tree.MOVE(new Tree.TEMP(base), 
@@ -223,8 +223,8 @@ public class Translate{
 
 				}
 				stm = new Tree.SEQ(stm, new Tree.MOVE(new Tree.MEM(new Tree.TEMP(point)), new Tree.TEMP(initValue)));
-			}
-			else {
+				}*/
+			//			else {
 				stm = new Tree.MOVE(new Tree.TEMP(level.frame.FORMAL(0)),new Tree.BINOP(Tree.BINOP.MUL, size.unEx(),new Tree.CONST(level.frame.wordSize())));
 				stm = new Tree.SEQ(stm, new Tree.MOVE(new Tree.TEMP(base), 
 													  level.frame.externalCall("malloc", 
@@ -233,10 +233,15 @@ public class Translate{
 												 new Tree.TEMP(level.frame.FORMAL(0)), 
 												 new Tree.TEMP(base));
 				stm = new Tree.SEQ(stm, new Tree.MOVE(new Tree.TEMP(end), left));
-				stm = new Tree.SEQ(stm, new Tree.MOVE(new Tree.TEMP(initValue), init.unEx()));
+				if(!(initAbsyn instanceof Absyn.ArrayExp || initAbsyn instanceof Absyn.RecordExp))
+					stm = new Tree.SEQ(stm, new Tree.MOVE(new Tree.TEMP(initValue), init.unEx()));
 				stm = new Tree.SEQ(stm , new Tree.MOVE(new Tree.TEMP(point), new Tree.TEMP(base)));
 				stm = new Tree.SEQ(stm, new Tree.LABEL(begin));
-				stm = new Tree.SEQ(stm, new Tree.MOVE(new Tree.MEM(new Tree.TEMP(point)), new Tree.TEMP(initValue)));
+				if(initAbsyn instanceof Absyn.ArrayExp || initAbsyn instanceof Absyn.RecordExp)
+					stm = new Tree.SEQ(stm, new Tree.MOVE(new Tree.MEM(new Tree.TEMP(point)), init.unEx()));
+				else 
+					stm = new Tree.SEQ(stm, new Tree.MOVE(new Tree.MEM(new Tree.TEMP(point)), new Tree.TEMP(initValue)));
+
 				stm = new Tree.SEQ(stm, new Tree.MOVE(new Tree.TEMP(point),
 													  new Tree.BINOP(Tree.BINOP.PLUS, 
 																	 new Tree.TEMP(point),
@@ -246,14 +251,10 @@ public class Translate{
 													   finish, begin));
 				stm = new Tree.SEQ(stm, new Tree.JUMP(begin));
 				stm = new Tree.SEQ(stm, new Tree.LABEL(finish));
-			}
 			return new Ex(new Tree.ESEQ(stm, new Tree.TEMP(base)));
-			//	}
-		
 	}
 	public Exp createWhileExp(Exp test, Exp body, Temp.Label done){
 		Temp.Label begin = new Temp.Label();
-		//		Temp.Label done = new Temp.Label();
 		Temp.Label cont = new Temp.Label();
 		Tree.SEQ seq = new Tree.SEQ(new Tree.LABEL(begin), 
 						new Tree.SEQ(test.unCx(cont,done), 

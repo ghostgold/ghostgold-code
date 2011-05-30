@@ -32,6 +32,8 @@ public class BasicBlock
 			ins = ins.tail;
 		}
 		Iterator<Temp.Temp> it = d.iterator();
+		dst = null;
+		src = null;
 		while(it.hasNext()){
 			dst = new Temp.TempList(it.next(), dst);
 		}
@@ -69,6 +71,8 @@ public class BasicBlock
 			}
 			ins = ins.tail;
 		}
+		dst = null;
+		src = null;
 		Iterator<Temp.Temp> it = d.iterator();
 		while(it.hasNext()){
 			dst = new Temp.TempList(it.next(), dst);

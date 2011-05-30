@@ -34,22 +34,22 @@ public class Codegen {
 			return;
 		}
 		if(s instanceof Tree.JUMP){
-			emit(new Assem.JUMP("j `j0", null, null, ((Tree.JUMP)s).targets));
+			emit(new Assem.JUMP("j `j0", ((Tree.JUMP)s).targets, Assem.JUMP.J));
 			return;
 		}
 		if(s instanceof Tree.CJUMP){
 			Tree.CJUMP cjump = (Tree.CJUMP)s;
 			String branch = "";
+			int op = -1;
 			switch(cjump.relop){
-			case Tree.CJUMP.EQ: branch = "beq";break;
-			case Tree.CJUMP.NE: branch = "bne";break;
-			case Tree.CJUMP.LT: branch = "blt";break;
-			case Tree.CJUMP.LE: branch = "ble";break;
-			case Tree.CJUMP.GT: branch = "bgt";break;
-			case Tree.CJUMP.GE: branch = "bge";break;
+			case Tree.CJUMP.EQ: branch = "beq"; op = Assem.BRANCH.EQ; break;
+			case Tree.CJUMP.NE: branch = "bne";op = Assem.BRANCH.NE;break;
+			case Tree.CJUMP.LT: branch = "blt";op = Assem.BRANCH.LT;break;
+			case Tree.CJUMP.LE: branch = "ble";op = Assem.BRANCH.LE;break;
+			case Tree.CJUMP.GT: branch = "bgt";op = Assem.BRANCH.GT;break;
+			case Tree.CJUMP.GE: branch = "bge";op = Assem.BRANCH.GE;break;
 			}
-			emit(new Assem.BRANCH(branch + " `s0 `s1 `j0", null, 
-								L(munchExp(cjump.left), L(munchExp(cjump.right), null)), new Temp.LabelList(cjump.iftrue, null)));
+			emit(new Assem.BRANCH(branch + " `s0 `s1 `j0", munchExp(cjump.left), munchExp(cjump.right), new Temp.LabelList(cjump.iftrue, null), op));
 			return;
 		}
 		if(s instanceof Tree.EXP){
@@ -63,45 +63,45 @@ public class Codegen {
 			if(s.src instanceof Tree.BINOP){
 				Tree.BINOP binop = (Tree.BINOP)s.src;
 				String op = "";
+				int opcode = -1;
 				Tree.Exp left = binop.left;
 				Tree.Exp right = binop.right;
 				switch(binop.binop){
 				case Tree.BINOP.PLUS:op = "add";
+					opcode = Assem.BINOP.ADD;
 					if(binop.left instanceof Tree.CONST && binop.right instanceof Tree.CONST){
-						emit(new Assem.OPER("li `d0 " + (((Tree.CONST)left).value + 
-														 ((Tree.CONST)right).value),
-											L(dst, null), null));
+						emit(new Assem.BINOP("li `d0 `i",dst, null, null,
+											 ((Tree.CONST)left).value + ((Tree.CONST)right).value, Assem.BINOP.LI));
 						return;
 					}
 					if(binop.left instanceof Tree.CONST){
-						emit(new Assem.OPER("addi `d0 `s0 " + ((Tree.CONST)left).value,
-											L(dst, null), L(munchExp(binop.right), null)));
+						emit(new Assem.BINOP("addi `d0 `s0 `i" ,dst, munchExp(binop.right), null, 
+											 ((Tree.CONST)left).value,  Assem.BINOP.ADDI));
 						return;
 					}
 					if(binop.right instanceof Tree.CONST){
-						emit(new Assem.OPER("addi `d0 `s0 " + ((Tree.CONST)right).value,
-											L(dst, null), L(munchExp(binop.left), null)));
+						emit(new Assem.BINOP("addi `d0 `s0 `i" ,dst, munchExp(binop.left), null, 
+											 ((Tree.CONST)right).value,  Assem.BINOP.ADDI));
 						return;
 					}
 					break;
 				case Tree.BINOP.MINUS:op = "sub";
+					opcode = Assem.BINOP.SUB;
 					if(binop.left instanceof Tree.CONST && binop.right instanceof Tree.CONST){
-						emit(new Assem.OPER("li `d0 " + (((Tree.CONST)left).value - 
-														 ((Tree.CONST)right).value),
-											L(dst, null), null));
+						emit(new Assem.BINOP("li `d0 `i", dst, null, null,
+											 ((Tree.CONST)left).value-((Tree.CONST)right).value,Assem.BINOP.LI));
 						return;
 					}
 					if(binop.right instanceof Tree.CONST){
-						emit(new Assem.OPER("addi `d0 `s0 " + (-(((Tree.CONST)right).value)),
-											L(dst, null), L(munchExp(binop.left), null)));
+						emit(new Assem.BINOP("addi `d0 `s0 `i" , dst, munchExp(binop.left), null,
+											-(((Tree.CONST)right).value),  Assem.BINOP.ADDI));
 						return;
 					}
 					break;
-				case Tree.BINOP.MUL:op = "mul";break;
-				case Tree.BINOP.DIV:op = "div";break;
+				case Tree.BINOP.MUL:op = "mul";opcode = Assem.BINOP.MUL; break;
+				case Tree.BINOP.DIV:op = "div";opcode = Assem.BINOP.DIV;break;
 				}
-				emit (new Assem.OPER(op + " `d0 `s0 `s1",L(dst,null), 
-									 L(munchExp(binop.left),L(munchExp(binop.right),null))));
+				emit (new Assem.BINOP(op + " `d0 `s0 `s1",dst, munchExp(binop.left), munchExp(binop.right), 0, opcode));
 				return;
 			}
 			if(s.src instanceof Tree.MEM){
@@ -112,18 +112,18 @@ public class Codegen {
 						Tree.Exp left = binop.left;
 						Tree.Exp right = binop.right;
 						if(binop.left instanceof Tree.CONST && binop.right instanceof Tree.CONST){
-							emit(new Assem.OPER("lw `d0 " + (((Tree.CONST)left).value + ((Tree.CONST)right).value) + "($zero)",
-												L(dst, null), null));
+							emit(new Assem.MEM("lw `d0 `i(`s0)" ,dst, frame.ZERO(), null,
+											   ((Tree.CONST)left).value + ((Tree.CONST)right).value, frame, Assem.MEM.LW));
 							return;
 						}
 						if(binop.left instanceof Tree.CONST){
-							emit(new Assem.OPER("lw `d0 " + ((Tree.CONST)left).value + "(`s0)", 
-												L(dst, null), L(munchExp(binop.right), null)));
+							emit(new Assem.MEM("lw `d0 `i(`s0)" ,dst, munchExp(binop.right), null,
+												((Tree.CONST)left).value , frame, Assem.MEM.LW)); 
 							return;
 						}
 						if(binop.right instanceof Tree.CONST){
-							emit(new Assem.OPER("lw `d0 " + ((Tree.CONST)right).value + "(`s0)", 
-												L(dst, null), L(munchExp(binop.left), null)));
+							emit(new Assem.MEM("lw `d0 `i(`s0)" ,dst , munchExp(binop.left),null,
+												((Tree.CONST)right).value, frame, Assem.MEM.LW)); 
 							return;
 						}
 					}
@@ -131,31 +131,34 @@ public class Codegen {
 						Tree.Exp left = binop.left;
 						Tree.Exp right = binop.right;
 						if(binop.left instanceof Tree.CONST && binop.right instanceof Tree.CONST){
-							emit(new Assem.OPER("lw `d0 " + (((Tree.CONST)left).value - ((Tree.CONST)right).value) + "($zero)", 
-												L(dst, null), null));
+							emit(new Assem.MEM("lw `d0 `i(`s0)", dst, frame.ZERO(), null,
+											   ((Tree.CONST)left).value - ((Tree.CONST)right).value, frame, Assem.MEM.LW));
 							return;
 						}
 						if(binop.right instanceof Tree.CONST){
-							emit(new Assem.OPER("lw `d0 " + (-((Tree.CONST)right).value) + "(`s0)", 
-												L(dst, null), L(munchExp(binop.left), null)));
+							emit(new Assem.MEM("lw `d0 `i(`s0)", dst, munchExp(binop.left), null,
+												-((Tree.CONST)right).value, frame, Assem.MEM.LW)); 
 							return;
 						}
 					}
 				}
 				if(mem.exp instanceof Tree.CONST){
-					emit(new Assem.OPER("lw `d0 " + ((Tree.CONST)mem.exp).value + "($zero)", 
-										L(dst,null), null));
+					emit(new Assem.MEM("lw `d0 `i(`s0)", dst, frame.ZERO(), null,
+										((Tree.CONST)mem.exp).value, frame, Assem.MEM.LW)); 
 					return;
 				} 		
-				emit(new Assem.OPER("lw `d0 0(`s0)", L(dst, null), L(munchExp(mem.exp), null)));
+				emit(new Assem.MEM("lw `d0 `i(`s0)",dst, munchExp(mem.exp), null,
+								   0, frame, Assem.MEM.LW));
+				
 				return;
 			}
 			if(s.src instanceof Tree.CONST){
-				emit(new Assem.OPER("li `d0 "+ ((Tree.CONST)s.src).value, L(dst,null), null));
+				emit(new Assem.BINOP("li `d0 `i" , dst, null, null,
+									 ((Tree.CONST)s.src).value,Assem.BINOP.LI));
 				return;
 			}
 			if(s.src instanceof Tree.NAME){
-				emit(new Assem.OPER("la `d0 "+ ((Tree.NAME)s.src).label.toString(), L(dst,null), null));
+				emit(new Assem.BINOP("la `d0 "+ ((Tree.NAME)s.src).label.toString(), dst, null, null, 0, Assem.BINOP.LA));
 				return;
 			}
 			emit(new Assem.MOVE("move `d0 `s0",dst, munchExp(s.src)));
@@ -169,41 +172,41 @@ public class Codegen {
 				Tree.Exp right = binop.right;
 				if(binop.binop == Tree.BINOP.PLUS){
 					if(left instanceof Tree.CONST && right instanceof Tree.CONST){
-						emit(new Assem.OPER("sw `s0 " + (((Tree.CONST)left).value + ((Tree.CONST)right).value) + "($zero)", null,
-											L(munchExp(s.src), null)));
+						emit(new Assem.MEM("sw `s0 `i(`s1)", null, frame.ZERO(), munchExp(s.src),
+										   ((Tree.CONST)left).value + ((Tree.CONST)right).value, frame, Assem.MEM.SW));
 						return;
 					}
 					if(left instanceof Tree.CONST){
-						emit(new Assem.OPER("sw `s0 " + ((Tree.CONST)left).value + "(`s1)", null, 
-											L(munchExp(s.src), L(munchExp(binop.right),null))));
+						emit(new Assem.MEM("sw `s0 `i(`s1)", null, munchExp(s.src), munchExp(binop.right),
+										   ((Tree.CONST)left).value, frame, Assem.MEM.SW));
 						return;
 					}
 					if(right instanceof Tree.CONST){
-						emit(new Assem.OPER("sw `s0 " + ((Tree.CONST)right).value + "(`s1)", null, 
-											L(munchExp(s.src), L(munchExp(binop.left),null))));
+						emit(new Assem.MEM("sw `s0 `i(`s1)", null, munchExp(s.src), munchExp(binop.left),
+										   ((Tree.CONST)right).value, frame, Assem.MEM.SW)); 
 						return;
 					}
 				}
 				if(binop.binop == Tree.BINOP.MINUS){
 					if(left instanceof Tree.CONST && right instanceof Tree.CONST){
-						emit(new Assem.OPER("sw `s0 " + (((Tree.CONST)left).value - ((Tree.CONST)right).value) + "($zero)", null,
-											L(munchExp(s.src), null)));
+						emit(new Assem.MEM("sw `s0 `i(`s1)", null , munchExp(s.src), frame.ZERO(), 
+										   (((Tree.CONST)left).value - ((Tree.CONST)right).value) , frame, Assem.MEM.SW));
 						return;
 					}
 					if(right instanceof Tree.CONST){
-						emit(new Assem.OPER("sw `s0 " + (-((Tree.CONST)right).value) + "(`s1)", null, 
-											L(munchExp(s.src), L(munchExp(binop.left),null))));
+						emit(new Assem.MEM("sw `s0 `i(`s1)", null , munchExp(s.src), munchExp(binop.left),
+											-((Tree.CONST)right).value, frame, Assem.MEM.SW));
 						return;
 					}
 				}
 			}
 			if(mem.exp instanceof Tree.CONST){
-				emit(new Assem.OPER("sw `s0 " + ((Tree.CONST)mem.exp).value + "($zero)", null, 
-									L(munchExp(s.src),null)));
+				emit(new Assem.MEM("sw `s0 `i(`s1)", null, munchExp(s.src), frame.ZERO(),
+									((Tree.CONST)mem.exp).value, frame, Assem.MEM.SW));
 				return;
 			}
-			emit(new Assem.OPER("sw `s0 0(`s1)", null, 
-								L(munchExp(s.src), L(munchExp(mem.exp),null))));
+			emit(new Assem.MEM("sw `s0 `i(`s1)", null,munchExp(s.src), munchExp(mem.exp),
+								0, frame, Assem.MEM.SW));
 		}
 	}
 
@@ -214,7 +217,7 @@ public class Codegen {
 			Temp.Temp r = new Temp.Temp();
 			Tree.CONST c = (Tree.CONST)e;
 			if(c.value == 0)return frame.ZERO();
-			emit(new Assem.OPER("li `d0 " + c.value, L(r, null), null));
+			emit(new Assem.BINOP("li `d0 `i" ,r, null,null, c.value, Assem.BINOP.LI));
 			return r;
 		}
 		if(e instanceof Tree.TEMP){
@@ -231,16 +234,62 @@ public class Codegen {
 		}
 		if(e instanceof Tree.NAME){
 			Temp.Temp r = new Temp.Temp();
-			emit(new Assem.OPER("la `d0 " + ((Tree.NAME)e).label.toString(), L(r, null), null));
+			emit(new Assem.BINOP("la `d0 " + ((Tree.NAME)e).label.toString(), r, null, null, 0,  Assem.BINOP.LA));
 			return r;
 		}
 		throw new Error("munchExp");
-
 	} 
 
 	Temp.Temp munchExp(Tree.MEM mem){
-		Temp.Temp r = new Temp.Temp();
+		Temp.Temp dst = new Temp.Temp();
 		if(mem.exp instanceof Tree.BINOP){
+			Tree.BINOP binop = (Tree.BINOP)mem.exp;
+			if(binop.binop == Tree.BINOP.PLUS){
+				Tree.Exp left = binop.left;
+				Tree.Exp right = binop.right;
+				if(binop.left instanceof Tree.CONST && binop.right instanceof Tree.CONST){
+					emit(new Assem.MEM("lw `d0 `i(`s0)" ,dst, frame.ZERO(), null,
+									   ((Tree.CONST)left).value + ((Tree.CONST)right).value, frame, Assem.MEM.LW));
+					return dst;
+				}
+				if(binop.left instanceof Tree.CONST){
+					emit(new Assem.MEM("lw `d0 `i(`s0)" ,dst, munchExp(binop.right), null,
+									   ((Tree.CONST)left).value , frame, Assem.MEM.LW)); 
+					return dst;
+				}
+				if(binop.right instanceof Tree.CONST){
+					emit(new Assem.MEM("lw `d0 `i(`s0)" ,dst , munchExp(binop.left),null,
+									   ((Tree.CONST)right).value, frame, Assem.MEM.LW)); 
+					return dst;
+				}
+			}
+			if(binop.binop == Tree.BINOP.MINUS){
+				Tree.Exp left = binop.left;
+				Tree.Exp right = binop.right;
+				if(binop.left instanceof Tree.CONST && binop.right instanceof Tree.CONST){
+					emit(new Assem.MEM("lw `d0 `i(`s0)", dst, frame.ZERO(), null,
+									   ((Tree.CONST)left).value - ((Tree.CONST)right).value, frame, Assem.MEM.LW));
+					return dst;
+				}
+				if(binop.right instanceof Tree.CONST){
+					emit(new Assem.MEM("lw `d0 `i(`s0)", dst, munchExp(binop.left), null,
+									   -((Tree.CONST)right).value, frame, Assem.MEM.LW)); 
+					return dst;
+				}
+			}
+		}
+		if(mem.exp instanceof Tree.CONST){
+			emit(new Assem.MEM("lw `d0 `i(`s0)", dst, frame.ZERO(), null,
+							   ((Tree.CONST)mem.exp).value, frame, Assem.MEM.LW)); 
+			return dst;
+		} 		
+		emit(new Assem.MEM("lw `d0 `i(`s0)",dst, munchExp(mem.exp), null,
+						   0, frame, Assem.MEM.LW));
+		return dst;
+
+
+		/*		if(mem.exp instanceof Tree.BINOP){
+
 			Tree.BINOP binop = (Tree.BINOP)mem.exp;
 			if(binop.binop == Tree.BINOP.PLUS){
 				Tree.Exp left = binop.left;
@@ -282,7 +331,7 @@ public class Codegen {
 			return r;
 		} 
 		emit(new Assem.OPER("lw `d0 0(`s0)", L(r,null), L(munchExp(mem.exp),null)));
-		return r;
+		return r;*/
 	}
 
 	Temp.TempList munchArgs(int x, Tree.ExpList args){
@@ -293,45 +342,47 @@ public class Codegen {
 	Temp.Temp munchExp(Tree.BINOP binop){
 		Temp.Temp dst = new Temp.Temp();
 		String op = "";
+		int opcode = -1;
 		Tree.Exp left = binop.left;
 		Tree.Exp right = binop.right;
 		switch(binop.binop){
 		case Tree.BINOP.PLUS:op = "add";
+			opcode = Assem.BINOP.ADD;
 			if(binop.left instanceof Tree.CONST && binop.right instanceof Tree.CONST){
-				emit(new Assem.OPER("li `d0 " + (((Tree.CONST)left).value + 
-												 ((Tree.CONST)right).value),
-									L(dst, null), null));
+				emit(new Assem.BINOP("li `d0 `i", dst, null, null, 
+									 ((Tree.CONST)left).value + ((Tree.CONST)right).value, Assem.BINOP.LI));
 				return dst;
 			}
 			if(binop.left instanceof Tree.CONST){
-				emit(new Assem.OPER("addi `d0 `s0 " + ((Tree.CONST)left).value,
-									L(dst, null), L(munchExp(binop.right), null)));
+				emit(new Assem.BINOP("addi `d0 `s0 `i ", dst, munchExp(binop.right), null,
+									 ((Tree.CONST)left).value, Assem.BINOP.ADDI));
 				return dst;
 			}
 			if(binop.right instanceof Tree.CONST){
-				emit(new Assem.OPER("addi `d0 `s0 " + ((Tree.CONST)right).value,
-									L(dst, null), L(munchExp(binop.left), null)));
+				emit(new Assem.BINOP("addi `d0 `s0 `i", dst, munchExp(binop.left), null,
+									 ((Tree.CONST)right).value, Assem.BINOP.ADDI));
 				return dst;
 			}
 			break;
 		case Tree.BINOP.MINUS:op = "sub";
+			opcode = Assem.BINOP.SUB;
 			if(binop.left instanceof Tree.CONST && binop.right instanceof Tree.CONST){
-				emit(new Assem.OPER("li `d0 " + (((Tree.CONST)left).value - 
-												 ((Tree.CONST)right).value),
-									L(dst, null), null));
+				emit(new Assem.BINOP("li `d0 `i", dst, null, null, 
+									 ((Tree.CONST)left).value - ((Tree.CONST)right).value, Assem.BINOP.LI));
 				return dst;
 			}
 			if(binop.right instanceof Tree.CONST){
-				emit(new Assem.OPER("addi `d0 `s0 " + (-(((Tree.CONST)right).value)),
-									L(dst, null), L(munchExp(binop.left), null)));
+				emit(new Assem.BINOP("addi `d0 `s0 `i", dst, munchExp(binop.left), null,
+									 -((Tree.CONST)right).value, Assem.BINOP.ADDI));
 				return dst;
 			}
 			break;
-		case Tree.BINOP.MUL:op = "mul";break;
-		case Tree.BINOP.DIV:op = "div";break;
+		case Tree.BINOP.MUL:op = "mul";
+			opcode = Assem.BINOP.MUL;break;
+		case Tree.BINOP.DIV:op = "div";opcode = Assem.BINOP.DIV;break;
 		}
-		emit (new Assem.OPER(op + " `d0 `s0 `s1",L(dst,null), 
-							 L(munchExp(binop.left),L(munchExp(binop.right),null))));
+		emit (new Assem.BINOP(op + " `d0 `s0 `s1",dst, munchExp(binop.left), munchExp(binop.right),
+							  0,opcode));
 		return dst;
 	}
 

@@ -1,21 +1,14 @@
 package Assem;
+import Temp.*;
+public class BRANCH extends OPER
+{
+	public final static int EQ = 10, NE = 11, LT = 12, LE = 13, GT = 14, GE = 15;
 
-public class BRANCH extends Instr {
-   public Temp.TempList dst;   
-   public Temp.TempList src;
-   public Targets jump;
 
-   public BRANCH(String a, Temp.TempList d, Temp.TempList s, Temp.LabelList j) {
-      assem=a; dst=d; src=s; jump=new Targets(j);
-   }
-   public BRANCH(String a, Temp.TempList d, Temp.TempList s) {
-      assem=a; dst=d; src=s; jump=null;
-   }
-
-   public Temp.TempList use() {return src;}
-   public Temp.TempList def() {return dst;}
-	public void setDef(Temp.TempList d){dst = d;}
-	public void setUse(Temp.TempList s){src = s;};
-   public Targets jumps() {return jump;}
-
+	public BRANCH(String a, Temp l,Temp r,  LabelList j, int opcode) {
+		super(a,null,l,r,0,j,opcode);
+	}
+	/*	public BRANCH(String a, Temp d, Temp l, Temp r,int c, Frame.Frame f,  int opcode) {
+		super(a,d,l,r,c,f, opcode);
+		}*/
 }

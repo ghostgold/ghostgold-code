@@ -10,6 +10,10 @@ public class TempList {
 			size = 1;
 		else size = tail.size + 1;
 	}
+	public TempList(Temp h){
+		head = h;
+		tail = null;
+	}
 	public TempList union(TempList b){
 		if(b == null)return this;
 		TempList ans = new TempList(null, null);

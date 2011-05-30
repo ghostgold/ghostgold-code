@@ -178,21 +178,21 @@ public class MipsFrame implements Frame{
 	}
 	@Override
 	public Assem.InstrList procEntryExit2(Assem.InstrList body){
-		if(body == null)return new Assem.InstrList(new Assem.OPER("", null, returnsink), null);
-		else body.append(new Assem.InstrList(new Assem.OPER("", null, returnsink), null));
+		if(body == null)return new Assem.InstrList(new Assem.CALL("", null, returnsink, null), null);
+		else body.append(new Assem.InstrList(new Assem.CALL("", null, returnsink, null), null));
 		return body;
 	}
 	@Override
 	public Assem.InstrList procEntryExit3(Assem.InstrList body){
 		if(body == null)return null;
 		//		Temp savefp = new Temp();
-		body = new Assem.InstrList(new Assem.OPER("sw `s0 -4(`s1)", null, L(fp,L(sp, null))),
+		body = new Assem.InstrList(new Assem.MEM("sw `s0 `i(`s1)", null, fp,sp, -4, this, Assem.MEM.SW),
 								   new Assem.InstrList(new Assem.MOVE("move `d0 `s0", fp, sp), 
-													   new Assem.InstrList(new Assem.OPER("addi `d0 `s0 -"+this.framesize(), L(sp,null), L(sp,null)), body)));
+													   new Assem.InstrList(new Assem.BINOP("addi `d0 `s0 `i", sp, sp, null, -(this.framesize()), Assem.BINOP.ADDI), body)));
 		body = new Assem.InstrList(new Assem.LABEL(name.toString()+":", name), body);
 		body.append(new Assem.InstrList(new Assem.MOVE("move `d0 `s0", sp, fp), 
-										new Assem.InstrList(new Assem.OPER("lw `d0 -4(`s0)", L(fp,null), L(fp,null)), null)));
-		body.append(new Assem.InstrList(new Assem.OPER("jr `s0", null, L(ra, null)), null));
+										new Assem.InstrList(new Assem.MEM("lw `d0 `i(`s0)", fp, fp, null, -4, this, Assem.MEM.SW), null)));
+		body.append(new Assem.InstrList(new Assem.CALL("jr `s0", null, L(ra, null), null), null));
 		return body;
 	}
 	@Override

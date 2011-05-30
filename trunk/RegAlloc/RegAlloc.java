@@ -114,54 +114,67 @@ public class RegAlloc implements Temp.TempMap{
 			BasicBlock block = b.next();
 			InstrList ins = block.instrs;
 			while(ins != null){
-				Temp.TempList def = ins.head.def();
-				if( def != null && spilledNodes.contains(interference.tnode(def.head))){
-					Frame.Access mem = tempSpillMem.get(interference.tnode(def.head));
-					if(ins.head instanceof MOVE){
-						ins.head = new OPER("sw `s0 " + mem.offSet() +"(`s1)",null,  L(ins.head.use().head, L(frame.FP(), null)));
+				if(ins.head instanceof MOVE){
+					MOVE move = (MOVE)(ins.head);
+					Temp.Temp dst = move.dst;
+					if( dst != null && spilledNodes.contains(interference.tnode(dst))){
+						Temp.Temp src = move.src;
+						Frame.Access mem = tempSpillMem.get(interference.tnode(dst));
+						ins.head = new MEM("sw `s0 `i(`s1)", null , src, frame.FP(), mem.offSet(), frame, Assem.MEM.SW);
 					}
-					else {
+				}
+				else if(ins.head instanceof OPER){
+					OPER op = (OPER)(ins.head);
+					Temp.Temp def = op.dst;
+					if( def != null && spilledNodes.contains(interference.tnode(def))){
+						Frame.Access mem = tempSpillMem.get(interference.tnode(def));
 						Temp.Temp spillTemp = new Temp.Temp();
 						spillTemp.setSpillCost(-1);
-						ins.head.setDef(L(spillTemp,null));
-						ins.tail = new InstrList(new OPER("sw `s0 " + mem.offSet() +"(`s1)",null, L(spillTemp, L(frame.FP(),null))), ins.tail);
+						op.dst = spillTemp;
+						ins.tail = new InstrList(new MEM("sw `s0 `i(`s1)",null, spillTemp, frame.FP(), 
+														 mem.offSet(), frame, Assem.MEM.SW),
+												 ins.tail);
 						ins = ins.tail;
 					}
 				}
 				if(ins.tail != null){
 					if(ins.tail.head instanceof MOVE){
-						Temp.TempList use = ins.tail.head.use();
-						if(spilledNodes.contains(interference.tnode(use.head))){
-							Frame.Access mem = tempSpillMem.get(interference.tnode(use.head));
-							ins.tail.head = new OPER("lw `d0 "+mem.offSet() + "(`s0)", ins.tail.head.def(), L(frame.FP(), null) );
+						MOVE move = (MOVE)(ins.tail.head);
+						Temp.Temp src = move.src;
+						if(src != null && spilledNodes.contains(interference.tnode(src))){
+							Temp.Temp dst = move.dst;
+							Frame.Access mem = tempSpillMem.get(interference.tnode(src));
+							ins.tail.head = new MEM("lw `d0 `i(`s0)", dst, frame.FP(), null, mem.offSet(), frame,
+													Assem.MEM.LW);
 						}
 					}
-					else{
-						Temp.TempList newUse = new Temp.TempList(null, null);
-						Temp.TempList saveUse = newUse;
-						for(Temp.TempList use = ins.tail.head.use(); use != null; use = use.tail){
-							if(spilledNodes.contains(interference.tnode(use.head))){
-								Frame.Access mem = tempSpillMem.get(interference.tnode(use.head));
-								Temp.Temp spillTemp = new Temp.Temp();
-								spillTemp.setSpillCost(-1);
-								if(newUse.head == null)newUse.head = spillTemp;
-								else {
-									newUse.tail = L(spillTemp,null);
-									newUse = newUse.tail;
-								}
-								ins.tail = new InstrList(new OPER("lw `d0 "+mem.offSet() + "(`s0)", L(spillTemp,null), L(frame.FP(), null) ), ins.tail);
+					else if(ins.tail.head instanceof OPER){
+						OPER op = (OPER)(ins.tail.head);
+						Temp.Temp left = op.left;
+						Temp.Temp spillLeft = left;
+						if(left != null && spilledNodes.contains(interference.tnode(left))){
+							Frame.Access mem = tempSpillMem.get(interference.tnode(left));
+							spillLeft = new Temp.Temp();
+							spillLeft.setSpillCost(-1);
+							ins.tail = new InstrList(new MEM("lw `d0 `i(`s0)", spillLeft, frame.FP(), null, 
+															 mem.offSet(), frame, Assem.MEM.LW), ins.tail);
+							ins = ins.tail;
+							op.left = spillLeft;
+						}
+						Temp.Temp right = op.right;
+						Temp.Temp spillRight = right;
+						if(right != null && spilledNodes.contains(interference.tnode(right))){
+							if(left != right){
+								Frame.Access mem = tempSpillMem.get(interference.tnode(right));
+								spillRight = new Temp.Temp();
+								spillLeft.setSpillCost(-1);
+								ins.tail = new InstrList(new MEM("lw `d0 `i(`s0)", spillRight, frame.FP(), null, 
+																 mem.offSet(), frame, Assem.MEM.LW), ins.tail);
 								ins = ins.tail;
 							}
-							else {
-								if(newUse.head == null)newUse.head = use.head;
-								else {
-									newUse.tail = L(use.head,null);
-									newUse = newUse.tail;
-								}
-							}
-
+							else spillRight = spillLeft;
+							op.right = spillRight;
 						}
-						if(saveUse.head != null)ins.tail.head.setUse(saveUse);
 					}
 				}
 				ins = ins.tail;

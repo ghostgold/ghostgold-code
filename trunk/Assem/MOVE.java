@@ -13,5 +13,10 @@ public class MOVE extends Instr {
 	public void setUse(Temp.TempList s){src = s.head;};
 
    public Targets jumps()     {return null;}
-
+	public String format(Temp.TempMap m){
+		String s = m.tempMap(src);
+		String d = m.tempMap(dst);
+		if(s.equals(d))return "";
+		else return "move " + d + " " + s;
+	}
 }
