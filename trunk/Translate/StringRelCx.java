@@ -31,8 +31,10 @@ public class StringRelCx extends Cx{
 		}
 		}*/
 	public Tree.Stm unCx(Label iftrue, Label iffalse){
-		Tree.Stm move = new Tree.SEQ(new Tree.MOVE(new Tree.TEMP(level.frame.FORMAL(0)), left), 
-									 new Tree.MOVE(new Tree.TEMP(level.frame.FORMAL(0)), right));
+		Temp.Temp a0 = new Temp.Temp();
+		Tree.Stm move = new Tree.SEQ(new Tree.MOVE(new Tree.TEMP(a0), left), 
+									 new Tree.MOVE(new Tree.TEMP(level.frame.FORMAL(1)), right));
+		move = new Tree.SEQ(move, new Tree.MOVE(new Tree.TEMP(level.frame.FORMAL(0)), new Tree.TEMP(a0)));
 		Tree.Exp call = level.frame.externalCall("strcmp", 
 												  new Tree.ExpList(new Tree.TEMP(level.frame.FORMAL(0)),
 																   new Tree.ExpList(new Tree.TEMP(level.frame.FORMAL(1)), 

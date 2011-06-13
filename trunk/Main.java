@@ -117,6 +117,7 @@ public class Main {
 		//		if(printIR)irPrinter.prStm(irTreeWithType.exp.unNx());
 		Tree.Stm stm = irTreeWithType.exp.unNx();
 		Frame.Frame funcframe= topFrame;
+		if(printIR)irPrinter.prStm(stm);
 		funcframe.procEntryExit1(stm);
 		//				Tree.StmList stmlist = Canon.Canon(stm);
 		Canon.TraceSchedule trace = new Canon.TraceSchedule(new Canon.BasicBlocks(Canon.Canon.linearize(stm)));

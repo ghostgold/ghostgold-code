@@ -47,10 +47,16 @@ public class Translate{
 
 			Tree.ExpList argsTreeExp = null;
 			Tree.ExpList argsPoint = null;
+			Temp.Temp[] formal;
+			formal = new Temp.Temp[4];
+			formal[0] = new Temp.Temp();
+			formal[1] = new Temp.Temp();
+			formal[2] = new Temp.Temp();
+			formal[3] = new Temp.Temp();
 			Tree.Stm moveReg = null;
 			int formalReg = 0;
 			while(args != null){
-				Tree.MOVE move = new Tree.MOVE(TEMP(level.frame.FORMAL(formalReg)), args.head.unEx());
+				Tree.MOVE move = new Tree.MOVE(TEMP(formal[formalReg]), args.head.unEx());
 				if(moveReg == null){
 					moveReg = move;
 					argsTreeExp = new Tree.ExpList(TEMP(level.frame.FORMAL(formalReg)), null);
@@ -64,10 +70,14 @@ public class Translate{
 				args = args.tail;
 				formalReg++;
 			}
+			for(int i = 0; i < formalReg; i++)
+				moveReg = new Tree.SEQ(moveReg, new Tree.MOVE(TEMP(level.frame.FORMAL(i)), TEMP(formal[i])));
 			/*			if(func.result.actual() instanceof Types.VOID)
 						return new Nx(new Tree.SEQ(moveReg, level.frame.externalCall(func.label.toString(), argsTreeExp)));
 			else */
-			return new Ex(new Tree.ESEQ(moveReg, level.frame.externalCall(func.label.toString(), argsTreeExp)));
+			if (moveReg != null)
+				return new Ex(new Tree.ESEQ(moveReg, level.frame.externalCall(func.label.toString(), argsTreeExp)));
+			else return new Ex(level.frame.externalCall(func.label.toString(), argsTreeExp));
 		}
 		else{
 			Tree.ExpList argsTreeExp = new Tree.ExpList(level.getFPOf(func.level.parent), null);
@@ -75,13 +85,21 @@ public class Translate{
 			Frame.Frame calleeframe = func.level.frame;
 			Frame.AccessList formalsAccess = calleeframe.getFormals();
 			Tree.Stm moveReg = new Tree.MOVE(new Tree.MEM(new Tree.TEMP(level.frame.SP())), argsTreeExp.head);
+
+			Temp.Temp[] formal;
+			formal = new Temp.Temp[4];
+			formal[0] = new Temp.Temp();
+			formal[1] = new Temp.Temp();
+			formal[2] = new Temp.Temp();
+			formal[3] = new Temp.Temp();
+
 			formalsAccess = formalsAccess.tail;
 			int formalReg = 0;
 			int argNum = 1;
 			while(args != null){
 				Tree.MOVE move;
 				if(!formalsAccess.head.escape() && formalReg < 4){
-					move = new Tree.MOVE(TEMP(level.frame.FORMAL(formalReg)), args.head.unEx());
+					move = new Tree.MOVE(TEMP(formal[formalReg]), args.head.unEx());
 					argsPoint.tail = new Tree.ExpList(TEMP(level.frame.FORMAL(formalReg)), null);
 					argsPoint = argsPoint.tail;
 					formalReg++;
@@ -96,6 +114,9 @@ public class Translate{
 				moveReg = new Tree.SEQ(moveReg, move);
 				args = args.tail;
 			}
+			for(int i = 0; i < formalReg; i++)
+				moveReg = new Tree.SEQ(moveReg, new Tree.MOVE(TEMP(level.frame.FORMAL(i)), TEMP(formal[i])));
+			
 			/*			if(func.result.actual() instanceof Types.VOID)
 						return new Nx(new SEQ(moveReg, new Tree.CALL(new Tree.NAME(func.label), argsTreeExp)));
 						else */
@@ -107,14 +128,21 @@ public class Translate{
 		Tree.SEQ tseq = new Tree.SEQ(null, null);
 		Tree.SEQ saveseq = tseq;
 		if(stm){
-			if(e.tail != null)
-				return new Nx(new Tree.SEQ(e.head.unNx(), createExpList(e.tail, true).unNx()));
+			Tree.Stm stms = e.head.unNx();
+			e = e.tail;
+			while(e != null){
+				stms = new Tree.SEQ(stms, e.head.unNx());
+				e = e.tail;
+			}
+			/*			if(e.tail != null){
+				//	return new Nx(new Tree.SEQ(e.head.unNx(), createExpList(e.tail, true).unNx()));
 				/*{while(e != null){
 				tseq.right = new Tree.SEQ(e.head.unNx(), null);
 				e = e.tail;
 				tseq = (Tree.SEQ)tseq.right;
-				}*/
-			else return e.head;
+				}
+			}*/
+			return new Nx(stms);
 		}
 		else {
 			if(e.tail !=null){

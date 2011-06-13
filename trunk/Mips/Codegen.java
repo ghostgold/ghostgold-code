@@ -98,7 +98,26 @@ public class Codegen {
 						return;
 					}
 					break;
-				case Tree.BINOP.MUL:op = "mul";opcode = Assem.BINOP.MUL; break;
+				case Tree.BINOP.MUL:op = "mul";opcode = Assem.BINOP.MUL;
+					if(left instanceof Tree.CONST && right instanceof Tree.CONST){
+						emit(new Assem.BINOP("li `d0 `i", dst, null, null,
+											 ((Tree.CONST)left).value*((Tree.CONST)right).value,Assem.BINOP.LI));
+						return;
+					}
+					if(right instanceof Tree.CONST){
+						int t = power2(((Tree.CONST)right).value);
+						if(t >=0)emit(new Assem.BINOP("sll `d0 `s0 `i" , dst, munchExp(binop.left), null,
+													  t,  Assem.BINOP.SLL));
+						return;
+					}
+					if(left instanceof Tree.CONST){
+						int t = power2(((Tree.CONST)left).value);
+						if(t >=0)emit(new Assem.BINOP("sll `d0 `s0 `i" , dst, munchExp(binop.right), null,
+													  t,  Assem.BINOP.SLL));
+						return;
+					}
+
+					break;
 				case Tree.BINOP.DIV:op = "div";opcode = Assem.BINOP.DIV;break;
 				}
 				emit (new Assem.BINOP(op + " `d0 `s0 `s1",dst, munchExp(binop.left), munchExp(binop.right), 0, opcode));
@@ -209,7 +228,20 @@ public class Codegen {
 								0, frame, Assem.MEM.SW));
 		}
 	}
-
+	int power2(int x){
+		if(x == 1)return 0;
+		if(x == 2)return 1;
+		if(x == 4)return 2;
+		if(x == 8)return 3;
+		if(x == 16)return 4;
+		if(x == 32)return 5;
+		if(x == 64)return 6;
+		if(x == 128)return 7;
+		if(x == 256)return 8;
+		if(x == 512)return 9;
+		if(x == 1024)return 10;
+		return -1;
+	}
 	Temp.Temp munchExp(Tree.Exp e){
 		if(e instanceof Tree.MEM)return munchExp((Tree.MEM)e);
 		if(e instanceof Tree.BINOP)return munchExp((Tree.BINOP)e);
@@ -378,7 +410,26 @@ public class Codegen {
 			}
 			break;
 		case Tree.BINOP.MUL:op = "mul";
-			opcode = Assem.BINOP.MUL;break;
+			opcode = Assem.BINOP.MUL;
+			if(left instanceof Tree.CONST && right instanceof Tree.CONST){
+				emit(new Assem.BINOP("li `d0 `i", dst, null, null,
+									 ((Tree.CONST)left).value*((Tree.CONST)right).value,Assem.BINOP.LI));
+				return dst;
+			}
+			if(right instanceof Tree.CONST){
+				int t = power2(((Tree.CONST)right).value);
+				if(t >=0)emit(new Assem.BINOP("sll `d0 `s0 `i" , dst, munchExp(binop.left), null,
+											  t,  Assem.BINOP.SLL));
+				return dst;
+			}
+			if(left instanceof Tree.CONST){
+				int t = power2(((Tree.CONST)left).value);
+				if(t >=0)emit(new Assem.BINOP("sll `d0 `s0 `i" , dst, munchExp(binop.right), null,
+											  t,  Assem.BINOP.SLL));
+				return dst;
+			}
+
+			break;
 		case Tree.BINOP.DIV:op = "div";opcode = Assem.BINOP.DIV;break;
 		}
 		emit (new Assem.BINOP(op + " `d0 `s0 `s1",dst, munchExp(binop.left), munchExp(binop.right),

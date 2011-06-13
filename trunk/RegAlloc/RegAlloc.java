@@ -67,7 +67,7 @@ public class RegAlloc implements Temp.TempMap{
 
 		spillComparator = new SpillComparator(interference);
 		spillWorkList = new PriorityQueue<Node>(10,spillComparator);
-
+		//		System.err.println("==============liveness done===============");
 		for(Temp.TempList t = frame.registers(); t != null; t = t.tail){
 			interference.newNode(t.head);
 			precolored.add(interference.tnode(t.head));
@@ -79,7 +79,9 @@ public class RegAlloc implements Temp.TempMap{
 			if(! interference.gtemp(t.head).precolored())initial.add(t.head);
 		for(NodeList t= nodes; t != null; t = t.tail)
 			moveList.put(t.head, new HashSet());
+		//		System.err.println("================build begin===============");
 		build();
+		//		System.err.println("================build done===============");
 		//		interference.show(System.out);
 		makeWorkList();
 		while(true){
@@ -90,14 +92,17 @@ public class RegAlloc implements Temp.TempMap{
 			if(simplifyWorkList.isEmpty() && workListMoves.isEmpty() && freezeWorkList.isEmpty()&& spillWorkList.isEmpty() )break;
 		}
 		assignColors();
+		//		System.err.println("===============assgin done===============");
 		if(doSpill && !spilledNodes.isEmpty()){
 			ArrayList<BasicBlock> newInstrs = rewriteProgram();
+			//			System.err.println("===============rewrite done===============");
 			RegAlloc newAlloc = new RegAlloc();
 			newAlloc.alloc(newInstrs, regNum, frame, doSpill);
 			prog = newAlloc.getProgram();
 			paintColor = newAlloc.paintColor;
 			interference = newAlloc.interference;
 		}
+
 	}
 	
 	private Temp.TempList L(Temp.Temp h, Temp.TempList t){
@@ -130,7 +135,7 @@ public class RegAlloc implements Temp.TempMap{
 						Frame.Access mem = tempSpillMem.get(interference.tnode(def));
 						Temp.Temp spillTemp = new Temp.Temp();
 						spillTemp.setSpillCost(-1);
-						op.dst = spillTemp;
+						op.setDst(spillTemp);
 						ins.tail = new InstrList(new MEM("sw `s0 `i(`s1)",null, spillTemp, frame.FP(), 
 														 mem.offSet(), frame, Assem.MEM.SW),
 												 ins.tail);
@@ -159,7 +164,6 @@ public class RegAlloc implements Temp.TempMap{
 							ins.tail = new InstrList(new MEM("lw `d0 `i(`s0)", spillLeft, frame.FP(), null, 
 															 mem.offSet(), frame, Assem.MEM.LW), ins.tail);
 							ins = ins.tail;
-							op.left = spillLeft;
 						}
 						Temp.Temp right = op.right;
 						Temp.Temp spillRight = right;
@@ -173,8 +177,8 @@ public class RegAlloc implements Temp.TempMap{
 								ins = ins.tail;
 							}
 							else spillRight = spillLeft;
-							op.right = spillRight;
 						}
+						op.setSrc(spillLeft, spillRight);
 					}
 				}
 				ins = ins.tail;
@@ -291,13 +295,13 @@ public class RegAlloc implements Temp.TempMap{
 		}
 	}
 
-	void decrementDegree(Node m){
+	void decrementDegree(Node m) {
 		int d = degree.get(m).intValue();
 		degree.put(m, new Integer(d-1));
-		if(d == regNum){
+		if (d == regNum){
 			enableMoves(new NodeList(m, adj(m)));
 			spillWorkList.remove(m);
-			if(moveRelated(m))
+			if (moveRelated(m))
 				freezeWorkList.add(m);
 			else 
 				simplifyWorkList.add(m);
@@ -451,9 +455,6 @@ public class RegAlloc implements Temp.TempMap{
 		}
 	}
 
-	void selectSApill(){
-		//todo
-	}
 	
 	void assignColors(){
 		while(!selectStack.empty()){
