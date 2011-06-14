@@ -1,14 +1,20 @@
 import Parse.*;
 import Semant.*;
 import java.util.*;
+import java.io.*;
+
 public class Main {
 
 	public static void main(String argv[])
 		throws java.io.IOException, java.lang.Exception{
 		String filename = argv[0];
-		ErrorMsg.ErrorMsg errorSender= new ErrorMsg.ErrorMsg(filename);
-		java.io.InputStream inp=new java.io.FileInputStream(filename);
-		
+		String suffix = ".tig";
+		ErrorMsg.ErrorMsg errorSender = new ErrorMsg.ErrorMsg(filename);
+		java.io.InputStream inp = new java.io.FileInputStream(filename);
+		if (!filename.endsWith(suffix)){
+			System.out.println("filename should be end with .tig");
+			return;
+		}
 		//===========================================================
 		boolean printAbsyn = false;
 		boolean printIR = false;
@@ -17,7 +23,7 @@ public class Main {
 		//=========================================================
 
 		Lexer scanner = new Lexer(inp,errorSender);
-		Parser par =new Parser(scanner);
+		Parser par = new Parser(scanner);
 		java_cup.runtime.Symbol parseTree;
 		Absyn.Exp absyn;
 		Absyn.Print printer; 
@@ -25,15 +31,22 @@ public class Main {
 		Translate.Level top;
 		Semant semant;
 		ExpTy irTreeWithType;
-
-		//try{
+		
+		//==============================front end begin===================
+		
+		//		try {
 			parseTree = (par.parse());
 			absyn = (Absyn.Exp)(parseTree.value);
 			printer = new Absyn.Print(System.out);
+			AbsynOpt.ReNaming rename  = new AbsynOpt.ReNaming(null);
+			absyn = rename.renameExp(absyn);
+			absyn = AbsynOpt.Inline.inlineExp(absyn);
 			if(printAbsyn){
 				printer.prExp(absyn,4);
 				System.out.print("\n==============================\n\n");
+				return;
 			}
+			
 			FindEscape.FindEscape findEscape = new FindEscape.FindEscape();
 			int mainOut = findEscape.traverseExp(0,absyn);
 			topFrame = new Mips.MipsFrame(new Temp.Label("main", false), null, mainOut);
@@ -42,44 +55,42 @@ public class Main {
 			semant.init();
 			irTreeWithType = semant.transExp(absyn, null);
 			//		}
-		/*		catch(Exception e)
-			{
-				System.out.println("error first");
-				return ;
-				}*/
+			/*catch(Exception e){
+			System.out.println("error first");
+			return;
+			}*/
 		if(Semant.semantError){
 			System.exit(1);
 		}
 
+		//=====================================front end finish================
+		//=====================================back end begin==================
 		Tree.Print irPrinter = new Tree.Print(System.out);
 		Temp.TempMap defaultMap = new Temp.DefaultMap();
-		
+		String assemname = filename.substring(0, filename.length() - suffix.length()) + ".s";
+		PrintStream out = new PrintStream(new BufferedOutputStream(new FileOutputStream(assemname)));
 		for(Translate.Frag f = semant.translate.getResults(); f != null; f = f.next ){
 			if(f instanceof Translate.DataFrag){
-				System.out.println(".data");
+				out.println(".data");
 				String s = ((Translate.DataFrag)f).data;
-				System.out.println( ((Translate.DataFrag)f).label.toString()+":");
-				System.out.print(".byte ");
+				out.println( ((Translate.DataFrag)f).label.toString()+":");
+				out.print(".byte ");
 				for(int i = 0 ; i < s.length(); i++){
-					System.out.print((int)s.charAt(i));
-					System.out.print(",");
+					out.print((int)s.charAt(i));
+					out.print(",");
 				}
-				System.out.println("0");
-				System.out.println(".align 2");
-				
+				out.println("0");
+				out.println(".align 2");
 			}
 			else {
-
 				Tree.Stm stm = ((Translate.ProcFrag)f).body;
 				Frame.Frame funcframe= ((Translate.ProcFrag)f).frame;
 				funcframe.procEntryExit1(stm);
 				Canon.TraceSchedule trace = new Canon.TraceSchedule(new Canon.BasicBlocks(Canon.Canon.linearize(stm)));
-				
 				Tree.StmList  stmlist = trace.stms;
-				//irPrinter.prStm(stmlist.head);
-				//Assem.BasicBlock 
 				Assem.InstrList assem = funcframe.codegen(stmlist.head);			
 				stmlist = stmlist.tail;
+				//				System.out.println(funcframe.getName().toString());
 				while(stmlist != null){		
 					if(printIR){
 						irPrinter.prStm(stmlist.head);
@@ -101,28 +112,28 @@ public class Main {
 				else tempmap = defaultMap;
 
 				if(printAssem){
-					System.out.println(".text");
+					out.println(".text");
 					for(ListIterator<Assem.BasicBlock> t = basicblocks.listIterator(); t.hasNext();){
 						assem = t.next().instrs;
 						while(assem != null){
-							System.out.println(assem.head.format(tempmap));
+							out.println(assem.head.format(tempmap));
 							assem = assem.tail;
 						}
-						System.out.println("\n");
+						out.println("\n");
 					}
 				}
 			}
-			System.out.println();
+			out.println();
 		}
-		//		if(printIR)irPrinter.prStm(irTreeWithType.exp.unNx());
+
 		Tree.Stm stm = irTreeWithType.exp.unNx();
 		Frame.Frame funcframe= topFrame;
 		if(printIR)irPrinter.prStm(stm);
 		funcframe.procEntryExit1(stm);
-		//				Tree.StmList stmlist = Canon.Canon(stm);
 		Canon.TraceSchedule trace = new Canon.TraceSchedule(new Canon.BasicBlocks(Canon.Canon.linearize(stm)));
 		Tree.StmList  stmlist = trace.stms;
 		Assem.InstrList assem = funcframe.codegen(stmlist.head);			
+		//		System.out.println(funcframe.getName().toString());
 		if(printIR)irPrinter.prStm(stmlist.head);
 		stmlist = stmlist.tail;
 		while(stmlist != null){
@@ -144,19 +155,40 @@ public class Main {
 		if(allocTemp)tempmap = regmap;
 		else tempmap = defaultMap;
 		if(printAssem){
-			System.out.println(".text");
+			out.println(".text");
 			for(ListIterator<Assem.BasicBlock> t = basicblocks.listIterator(); t.hasNext();){
 				assem = t.next().instrs;
 				while(assem != null){
-					System.out.println(assem.head.format(tempmap));
+					out.println(assem.head.format(tempmap));
 					assem = assem.tail;
 				}
-				System.out.println("\n");
+				out.println("\n");
 			}
 		}
+		new RuntimePrinter(out);
+		out.close();
 		return;
 	}
+
 
 }
 
 
+class RuntimePrinter{
+	RuntimePrinter(PrintStream out){
+		try{
+			String runtimeName = "runtime.s";
+			InputStream runtime = getClass().getResourceAsStream(runtimeName);
+			BufferedReader runtimeReader = new BufferedReader(new InputStreamReader(runtime));
+			String line = runtimeReader.readLine();
+			while(line != null){
+				out.println(line);
+				line = runtimeReader.readLine();
+			}
+		}
+		catch(IOException e){
+			System.out.println("No Runtime");
+		}
+		
+	}
+}

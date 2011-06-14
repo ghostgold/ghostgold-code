@@ -14,6 +14,7 @@ abstract public interface Frame {
     /**
      *  @return the temp of $fp
      */
+	public Temp.Temp FFP();
 	public Temp.Temp FP();
 	public Temp.Temp RV();
 	public Temp.Temp SP();
@@ -53,6 +54,8 @@ abstract public interface Frame {
 	
 	public Temp.TempList calldefs();
 	
+	public Temp.TempList syscalldefs();
+
 	public Temp.TempList parameters();
 
 	public Tree.Stm procEntryExit1(Tree.Stm body);

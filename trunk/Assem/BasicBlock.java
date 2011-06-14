@@ -92,6 +92,7 @@ public class BasicBlock
 	public Temp.TempList tot(){
 		return temps;
 	}
+
 	static public  ArrayList<BasicBlock> Partition(InstrList ins){
 		ArrayList<BasicBlock> basicblocks = new  ArrayList();
 		while(ins != null){

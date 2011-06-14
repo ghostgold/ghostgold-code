@@ -8,7 +8,7 @@ public class OPER extends Instr
 	public Temp left, right;
 	public TempList dsts;
 	public TempList srcs;
-	Targets jump;
+	public Targets jump;
 	public int opcode;
 	/*	public OPER(String a, Temp.TempList d, Temp.TempList s, Temp.LabelList j) {
 		assem=a; dst=d; src=s; jump=new Targets(j);

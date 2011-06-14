@@ -46,6 +46,28 @@ public class BlockFlowGraph extends FlowGraph {
 					addEdge(nodeList.head, targetNode);
 					labels = labels.tail;
 				}
+				/*				if(lastOfBlock instanceof JUMP) {
+					Instr preSecondInstr = lastOfBlock;
+					Instr secondInstr = new BINOP("addi",null, null, null, 0, -1);
+					Temp.Label dstLabel = targetsLabels.labels.head;
+					Node dstNode = labelToNode.get(dstLabel);
+					BasicBlock dstBlock = nodeToInstr.get(dstNode);
+					if(dstBlock.instrs.tail != null)
+						secondInstr = dstBlock.instrs.tail.head;
+					while(secondInstr instanceof JUMP){
+						dstLabel = secondInstr.jumps().labels.head;
+						dstNode = labelToNode.get(dstLabel);
+						dstBlock = nodeToInstr.get(dstNode);
+						preSecondInstr = secondInstr;
+						if(dstBlock.instrs.tail != null)
+							secondInstr = dstBlock.instrs.tail.head;
+						else break;
+					}
+					((OPER)lastOfBlock).jump = preSecondInstr.jumps();
+					addEdge(nodeList.head, labelToNode.get(preSecondInstr.jumps().labels.head));
+					}*/
+				//				else {
+						//	}
 			}
 			nodeList = nodeList.tail;
 		}

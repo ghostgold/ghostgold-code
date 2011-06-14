@@ -193,13 +193,11 @@ public class RegAlloc implements Temp.TempMap{
 		for(NodeList nodes = interference.nodes(); nodes != null; nodes = nodes.tail){
 			degree.put(nodes.head, new Integer(0));
 		}
-		Dictionary<Assem.Instr,Set<Temp.Temp>> liveOut;
-		for(ListIterator<BasicBlock> b = blocks.listIterator(); b.hasNext();){
-			BasicBlock block = b.next();
+		//		Dictionary<Assem.Instr,Set<Temp.Temp>> liveOut;
+		for(BasicBlock block : blocks){
 			for(Temp.TempList tot = block.tot(); tot != null; tot = tot.tail)
-				tot.head.addSpillCost(1);
+						tot.head.addSpillCost(1);
 			Set<Temp.Temp> live = liveness.liveAt(block);
-			Iterator<Temp.Temp> l = live.iterator();
 			/*			while(l.hasNext()){
 				System.out.print(l.next().toString() + ' ');
 			}
@@ -217,12 +215,8 @@ public class RegAlloc implements Temp.TempMap{
 					MOVE move = (MOVE)t.head;
 					Node dstNode = interference.tnode(move.dst);
 					Node srcNode = interference.tnode(move.src);
-					live.remove(interference.gtemp(srcNode));
-					/*					for(Temp.TempList l= live; l != null; l = l.tail){
-						if(l.head != move.dst && l.head != move.src){
-							addEdge(interference.tnode(l.head), dstNode);
-						}
-						}*/
+					live.remove(interference.gtemp(srcNode)); 
+					//					live.remove(move.src);
 					Move nodeMove = new Move(dstNode, srcNode);
 					moveList.get(dstNode).add(nodeMove);
 					moveList.get(srcNode).add(nodeMove);
@@ -231,9 +225,7 @@ public class RegAlloc implements Temp.TempMap{
 				for(Temp.TempList def = t.head.def(); def != null ; def = def.tail)
 					live.add(def.head);
 				for(Temp.TempList def = t.head.def(); def != null; def = def.tail){
-					l = live.iterator();
-					while(l.hasNext()){
-						Temp.Temp u = l.next();
+					for(Temp.Temp u : live){
 						if(def.head != u)
 							addEdge(interference.tnode(def.head), interference.tnode(u));
 					}

@@ -14,6 +14,7 @@ public abstract class Exp {
 	 * get the value of this expression
 	 * @return the value IR representation 
 	 */
+	public boolean high = false;
 	public abstract Tree.Exp unEx();
 	/**
 	 * get the action of this expression

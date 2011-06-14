@@ -186,100 +186,51 @@ public class Translate{
 																 new Tree.CONST(level.frame.wordSize()))));
 			init = init.tail;
 		}
-		return new Ex(new Tree.ESEQ(stm, new Tree.TEMP(base)));
+		Ex ans =  new Ex(new Tree.ESEQ(stm, new Tree.TEMP(base)));
+		ans.high = true;
+		return ans;
 	}
 
 	public Exp createArrayExp(Exp size, Exp init, Absyn.Exp initAbsyn, Level level){
-	    /*		if(initAbsyn instanceof Absyn.ArrayExp || initAbsyn instanceof Absyn.RecordExp){
-			Tree.Stm stm;
-			Temp.Temp size = new Temp.Temp();
-			Temp.Temp base = new Temp.Temp();
-			Temp.Temp point = new Temp.Temp();
-			Temp.Temp end = new Temp.Temp();
-			Temp.Label begin = new Temp.Label();
-			Temp.Label finish = new Temp.Label();
-			stm = new Tree.MOVE(new Tree.TEMP(size), sizeF.unEx());
-			stm = new Tree.SEQ(stm, new Tree.MOVE(new Tree.TEMP(level.frame.FORMAL(0)), new Tree.TEMP(size)));
-			stm = new Tree.SEQ(stm, new Tree.MOVE(new Tree.TEMP(base), 
-					   level.frame.externalCall("malloc", 
-												new Tree.ExpList(new Tree.TEMP(level.frame.FORMAL(0)), null))));
-			Tree.Exp left = new Tree.BINOP(Tree.BINOP.PLUS, 
-										   new Tree.BINOP(Tree.BINOP.MUL,
-														  new Tree.CONST(level.frame.wordSize()),
-														  new Tree.TEMP(size)), 
-										   new Tree.TEMP(base));
-			stm = new Tree.SEQ(stm, new Tree.MOVE(new Tree.TEMP(end), left));
-			stm = new Tree.SEQ(stm , new Tree.MOVE(new Tree.TEMP(point), new Tree.TEMP(base)));
-			stm = new Tree.SEQ(stm, new Tree.LABEL(begin));
-			stm = new Tree.SEQ(stm, new Tree.MOVE(new Tree.MEM(new Tree.TEMP(point)), init.unEx()));
-			stm = new Tree.SEQ(stm, new Tree.MOVE(new Tree.TEMP(point),
-												  new Tree.BINOP(Tree.BINOP.PLUS, 
-																 new Tree.TEMP(point),
-																 new Tree.CONST(level.frame.wordSize()))));
-
-			stm = new Tree.SEQ(stm, new Tree.CJUMP(Tree.CJUMP.EQ, new Tree.TEMP(end), new Tree.TEMP(point),
-												   finish, begin));
-			stm = new Tree.SEQ(stm, new Tree.JUMP(begin));
-			stm = new Tree.SEQ(stm, new Tree.LABEL(finish));
-			return new Ex(new Tree.ESEQ(stm, new Tree.TEMP(base)));
-			}*/
-	    //		else {
-			Tree.Stm stm;
-			//			Temp.Temp size = new Temp.Temp();
-			Temp.Temp base = new Temp.Temp();
-			Temp.Temp point = new Temp.Temp();
-			Temp.Temp end = new Temp.Temp();
-			Temp.Temp initValue = new Temp.Temp();
-			Temp.Label begin = new Temp.Label();
-			Temp.Label finish = new Temp.Label();
+		Tree.Stm stm;
+		//			Temp.Temp size = new Temp.Temp();
+		Temp.Temp base = new Temp.Temp();
+		Temp.Temp point = new Temp.Temp();
+		Temp.Temp end = new Temp.Temp();
+		Temp.Temp initValue = new Temp.Temp();
+		Temp.Label begin = new Temp.Label();
+		Temp.Label finish = new Temp.Label();
 			
 
-			/*	if(size.unEx() instanceof Tree.CONST){
-				int sizeConst = ((Tree.CONST)(size.unEx())).value;
-				stm = new  Tree.MOVE(new Tree.TEMP(level.frame.FORMAL(0)),new Tree.CONST(sizeConst * level.frame.wordSize()));
-				stm = new Tree.SEQ(stm, new Tree.MOVE(new Tree.TEMP(base), 
-													  level.frame.externalCall("malloc", 
-																			   new Tree.ExpList(new Tree.TEMP(level.frame.FORMAL(0)), null))));
-				stm = new Tree.SEQ(stm , new Tree.MOVE(new Tree.TEMP(point), new Tree.TEMP(base)));
-				stm = new Tree.SEQ(stm, new Tree.MOVE(new Tree.TEMP(initValue), init.unEx()));
-				for (int i = 0; i< sizeConst-1; i++){
-					stm = new Tree.SEQ(stm, new Tree.MOVE(new Tree.MEM(new Tree.TEMP(point)), new Tree.TEMP(initValue)));
-					stm = new Tree.SEQ(stm, new Tree.MOVE(new Tree.TEMP(point),
-														  new Tree.BINOP(Tree.BINOP.PLUS, 
-																		 new Tree.TEMP(point),
-																		 new Tree.CONST(level.frame.wordSize()))));
+		stm = new Tree.MOVE(new Tree.TEMP(level.frame.FORMAL(0)),new Tree.BINOP(Tree.BINOP.MUL, size.unEx(),new Tree.CONST(level.frame.wordSize())));
+		stm = new Tree.SEQ(stm, new Tree.MOVE(new Tree.TEMP(base), 
+											  level.frame.externalCall("malloc", 
+																	   new Tree.ExpList(new Tree.TEMP(level.frame.FORMAL(0)), null))));
+		Tree.Exp left = new Tree.BINOP(Tree.BINOP.PLUS, 
+									   new Tree.TEMP(level.frame.FORMAL(0)), 
+									   new Tree.TEMP(base));
+		stm = new Tree.SEQ(stm, new Tree.MOVE(new Tree.TEMP(end), left));
+		if(!init.high)
+			stm = new Tree.SEQ(stm, new Tree.MOVE(new Tree.TEMP(initValue), init.unEx()));
+		stm = new Tree.SEQ(stm , new Tree.MOVE(new Tree.TEMP(point), new Tree.TEMP(base)));
+		stm = new Tree.SEQ(stm, new Tree.LABEL(begin));
+		if(init.high)
+			stm = new Tree.SEQ(stm, new Tree.MOVE(new Tree.MEM(new Tree.TEMP(point)), init.unEx()));
+		else 
+			stm = new Tree.SEQ(stm, new Tree.MOVE(new Tree.MEM(new Tree.TEMP(point)), new Tree.TEMP(initValue)));
 
-				}
-				stm = new Tree.SEQ(stm, new Tree.MOVE(new Tree.MEM(new Tree.TEMP(point)), new Tree.TEMP(initValue)));
-				}*/
-			//			else {
-				stm = new Tree.MOVE(new Tree.TEMP(level.frame.FORMAL(0)),new Tree.BINOP(Tree.BINOP.MUL, size.unEx(),new Tree.CONST(level.frame.wordSize())));
-				stm = new Tree.SEQ(stm, new Tree.MOVE(new Tree.TEMP(base), 
-													  level.frame.externalCall("malloc", 
-																			   new Tree.ExpList(new Tree.TEMP(level.frame.FORMAL(0)), null))));
-				Tree.Exp left = new Tree.BINOP(Tree.BINOP.PLUS, 
-												 new Tree.TEMP(level.frame.FORMAL(0)), 
-												 new Tree.TEMP(base));
-				stm = new Tree.SEQ(stm, new Tree.MOVE(new Tree.TEMP(end), left));
-				if(!(initAbsyn instanceof Absyn.ArrayExp || initAbsyn instanceof Absyn.RecordExp))
-					stm = new Tree.SEQ(stm, new Tree.MOVE(new Tree.TEMP(initValue), init.unEx()));
-				stm = new Tree.SEQ(stm , new Tree.MOVE(new Tree.TEMP(point), new Tree.TEMP(base)));
-				stm = new Tree.SEQ(stm, new Tree.LABEL(begin));
-				if(initAbsyn instanceof Absyn.ArrayExp || initAbsyn instanceof Absyn.RecordExp)
-					stm = new Tree.SEQ(stm, new Tree.MOVE(new Tree.MEM(new Tree.TEMP(point)), init.unEx()));
-				else 
-					stm = new Tree.SEQ(stm, new Tree.MOVE(new Tree.MEM(new Tree.TEMP(point)), new Tree.TEMP(initValue)));
+		stm = new Tree.SEQ(stm, new Tree.MOVE(new Tree.TEMP(point),
+											  new Tree.BINOP(Tree.BINOP.PLUS, 
+															 new Tree.TEMP(point),
+															 new Tree.CONST(level.frame.wordSize()))));
 
-				stm = new Tree.SEQ(stm, new Tree.MOVE(new Tree.TEMP(point),
-													  new Tree.BINOP(Tree.BINOP.PLUS, 
-																	 new Tree.TEMP(point),
-																	 new Tree.CONST(level.frame.wordSize()))));
-
-				stm = new Tree.SEQ(stm, new Tree.CJUMP(Tree.CJUMP.EQ, new Tree.TEMP(end), new Tree.TEMP(point),
-													   finish, begin));
-				stm = new Tree.SEQ(stm, new Tree.JUMP(begin));
-				stm = new Tree.SEQ(stm, new Tree.LABEL(finish));
-			return new Ex(new Tree.ESEQ(stm, new Tree.TEMP(base)));
+		stm = new Tree.SEQ(stm, new Tree.CJUMP(Tree.CJUMP.EQ, new Tree.TEMP(end), new Tree.TEMP(point),
+											   finish, begin));
+		stm = new Tree.SEQ(stm, new Tree.JUMP(begin));
+		stm = new Tree.SEQ(stm, new Tree.LABEL(finish));
+		Ex ans =  new Ex(new Tree.ESEQ(stm, new Tree.TEMP(base)));
+		ans.high = true;
+		return ans;
 	}
 	public Exp createWhileExp(Exp test, Exp body, Temp.Label done){
 		Temp.Label begin = new Temp.Label();

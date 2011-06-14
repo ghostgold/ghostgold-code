@@ -43,6 +43,11 @@ public class Level {
     public Tree.Exp getFPOf( Level target ){
 		Level tLevel = this;
 		Tree.Exp fp = new Tree.TEMP(frame.FP());
+		if(tLevel == target)return fp;
+
+		tLevel = this.parent;
+		fp = new Tree.TEMP(frame.FFP());
+		if(tLevel == target)return fp;
 		Tree.Exp ans = fp;
 		while(tLevel != target){
 			ans = tLevel.staticLink().exp(fp);

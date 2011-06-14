@@ -1,12 +1,16 @@
 package Semant;
 
-class Env
+public class Env
 {
-	Symbol.Table venv;
-	Symbol.Table tenv;
+	public Symbol.Table venv;
+	public Symbol.Table tenv;
 	ErrorMsg.ErrorMsg errorMsg;
-	Env(ErrorMsg.ErrorMsg err){
+	public Env(ErrorMsg.ErrorMsg err){
 		errorMsg = err;
+		venv = new Symbol.Table();
+		tenv = new Symbol.Table();
+	}
+	public Env(){
 		venv = new Symbol.Table();
 		tenv = new Symbol.Table();
 	}

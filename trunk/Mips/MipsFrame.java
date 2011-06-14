@@ -52,6 +52,7 @@ public class MipsFrame implements Frame{
 	}
 	public Label name;
 	public AccessList formals;
+	public Temp ffp = new Temp();
 	public static Temp zero = new Temp("$zero", 0);
 	public static Temp fp = new Temp("$fp", 30);
 	public static Temp sp = new Temp("$sp", 29);
@@ -150,7 +151,7 @@ public class MipsFrame implements Frame{
 		int argNum =0;
 		AccessList tAccess = formals;
 		if(body == null)body = new Tree.EXP(new Tree.CONST(0));
-		while(tAccess != null){
+		while (tAccess != null){
 			if(!tAccess.head.escape()){
 				Tree.MOVE move;
 				if(formalReg < 4){
@@ -167,6 +168,7 @@ public class MipsFrame implements Frame{
 			tAccess = tAccess.tail;
 			argNum++;
 		}
+		body = new Tree.SEQ(new Tree.MOVE(TEMP(FFP()),new Tree.MEM(TEMP(FP()))), body);
 		TempList savereg = calleeSaves();
 		while(savereg != null){
 			Temp save = new Temp();
@@ -203,6 +205,9 @@ public class MipsFrame implements Frame{
 	public Temp FP() {
 		return fp;
 	}
+	public Temp FFP(){
+		return ffp;
+	}
 	@Override
 	public Temp RV() {
 
@@ -226,6 +231,10 @@ public class MipsFrame implements Frame{
 	public TempList calldefs(){
 		return L(v0,L(v1,L(a0,L(a1,L(a2,L(a3,L(t0,L(t1,L(t2,L(t3,L(t4,L(t5,L(t6,L(t7,L(t8,L(t9,L(ra,null)))))))))))))))));
 
+	}
+	@Override
+	public TempList syscalldefs(){
+		return L(v0,L(a0,L(a1,L(a2,L(a3,L(ra,null))))));
 	}
 	@Override
 	public TempList calleeSaves(){

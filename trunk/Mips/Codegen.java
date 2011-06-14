@@ -106,15 +106,19 @@ public class Codegen {
 					}
 					if(right instanceof Tree.CONST){
 						int t = power2(((Tree.CONST)right).value);
-						if(t >=0)emit(new Assem.BINOP("sll `d0 `s0 `i" , dst, munchExp(binop.left), null,
+						if(t >=0){
+							emit(new Assem.BINOP("sll `d0 `s0 `i" , dst, munchExp(binop.left), null,
 													  t,  Assem.BINOP.SLL));
-						return;
+							return;
+						}
 					}
 					if(left instanceof Tree.CONST){
 						int t = power2(((Tree.CONST)left).value);
-						if(t >=0)emit(new Assem.BINOP("sll `d0 `s0 `i" , dst, munchExp(binop.right), null,
+						if(t >=0){
+							emit(new Assem.BINOP("sll `d0 `s0 `i" , dst, munchExp(binop.right), null,
 													  t,  Assem.BINOP.SLL));
-						return;
+							return;
+						}
 					}
 
 					break;
@@ -261,7 +265,12 @@ public class Codegen {
 			//Temp.Temp r = munchExp(call.func);
 			Temp.TempList l = munchArgs(0,call.args);
 
-			emit(new Assem.CALL("jal `j0 ", frame.calldefs(), l, new Temp.LabelList(((Tree.NAME)call.func).label, null)));
+			String name = (((Tree.NAME)call.func).label).toString();
+			String preffix = "_";
+			if(name.startsWith(preffix))
+				emit(new Assem.CALL("jal `j0 ", frame.syscalldefs(), l, new Temp.LabelList(((Tree.NAME)call.func).label, null)));
+			else
+				emit(new Assem.CALL("jal `j0 ", frame.calldefs(), l, new Temp.LabelList(((Tree.NAME)call.func).label, null)));
 			return frame.RV();
 		}
 		if(e instanceof Tree.NAME){
@@ -418,15 +427,19 @@ public class Codegen {
 			}
 			if(right instanceof Tree.CONST){
 				int t = power2(((Tree.CONST)right).value);
-				if(t >=0)emit(new Assem.BINOP("sll `d0 `s0 `i" , dst, munchExp(binop.left), null,
+				if(t >=0){
+					emit(new Assem.BINOP("sll `d0 `s0 `i" , dst, munchExp(binop.left), null,
 											  t,  Assem.BINOP.SLL));
-				return dst;
+					return dst;
+				}
 			}
 			if(left instanceof Tree.CONST){
 				int t = power2(((Tree.CONST)left).value);
-				if(t >=0)emit(new Assem.BINOP("sll `d0 `s0 `i" , dst, munchExp(binop.right), null,
+				if(t >=0){
+					emit(new Assem.BINOP("sll `d0 `s0 `i" , dst, munchExp(binop.right), null,
 											  t,  Assem.BINOP.SLL));
-				return dst;
+					return dst;
+				}
 			}
 
 			break;
