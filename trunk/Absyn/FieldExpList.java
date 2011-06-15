@@ -12,4 +12,8 @@ public class FieldExpList extends Absyn {
 		if(tail == null)tail = t;
 		else tail.append(t);
 	}
+	public FieldExpList clone(){
+		if(tail == null)return new FieldExpList(pos, name, init.clone(), null);
+		else return new FieldExpList(pos, name, init.clone(), tail.clone());
+	}
 }

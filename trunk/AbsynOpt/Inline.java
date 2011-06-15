@@ -56,7 +56,7 @@ public class Inline
 				if(args != null || params != null)
 					throw new Error("args number error");
 				else {
-					return new LetExp(0, decs, func.body);
+					return new LetExp(0, decs, func.body.clone());
 				}
 			}
 		}

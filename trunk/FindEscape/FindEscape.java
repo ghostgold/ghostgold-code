@@ -133,9 +133,12 @@ public class FindEscape{
 		return (x>y?x:y);
 	}
 	int traverseExp(int depth, Absyn.ForExp e){
-		int x = traverseDec(depth, e.var);
+		int x = traverseExp(depth, e.var.init);
 		int y = traverseExp(depth, e.hi);
+		escEnv.beginScope();
+		escEnv.put(e.var.name, new VarEscape(depth, e.var));
 		int z = traverseExp(depth, e.body);
+		escEnv.endScope();
 		if(x >= y && x >=z)return x;
 		if(y >= x && y >=z)return y;
 		return z;
@@ -146,12 +149,14 @@ public class FindEscape{
 	int traverseExp(int depth, Absyn.LetExp e){
 		Absyn.DecList dl = e.decs;
 		int size = 0;
+		escEnv.beginScope();
 		while(dl != null){
 			int t = traverseDec(depth, dl.head);
 			if(t > size)size = t;
 			dl = dl.tail;
 		}
 		int t = traverseExp(depth, e.body);
+		escEnv.endScope();
 		if(t > size)size = t;
 		return size;
 	}
@@ -177,11 +182,13 @@ public class FindEscape{
 	}
 	int traverseDec(int depth, Absyn.FunctionDec d){
 		Absyn.FieldList fl = d.params;
+		escEnv.beginScope();
 		while(fl != null){
 			escEnv.put(fl.name, new FormalEscape(depth + 1, fl));
 			fl = fl.tail;
 		}
 		d.outGoing = traverseExp(depth + 1, d.body);
+		escEnv.endScope();
 		if(d.next != null)traverseDec(depth, d.next);
 		return 0;
 	}

@@ -9,4 +9,8 @@ public class ExpList {
 		if(tail==null)tail = new ExpList(h, null);
 		else tail.append(h);
 	}
+	public ExpList clone(){
+		if(tail == null)return new ExpList(head.clone(), null);
+		else return new ExpList(head.clone(), tail.clone());
+	}
 }

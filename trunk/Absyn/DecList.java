@@ -13,4 +13,8 @@ public class DecList {
 		}
 		else tail.append(t);
 	}
+	public DecList clone(){
+		if(tail == null)return new DecList(head.clone(), null);
+		else return new DecList(head.clone(), tail.clone());
+	}
 }

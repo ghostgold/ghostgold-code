@@ -41,6 +41,10 @@ public class Main {
 			AbsynOpt.ReNaming rename  = new AbsynOpt.ReNaming(null);
 			absyn = rename.renameExp(absyn);
 			absyn = AbsynOpt.Inline.inlineExp(absyn);
+			AbsynOpt.FindConst.findConstExp(absyn);
+			absyn = AbsynOpt.CopyConst.copyConstExp(absyn);
+			absyn = AbsynOpt.LoopExpantion.loopExpantion(absyn);
+
 			if(printAbsyn){
 				printer.prExp(absyn,4);
 				System.out.print("\n==============================\n\n");

@@ -10,4 +10,8 @@ public class TypeDec extends Dec {
 		if(next == null)next = t;
 		else next.append(t);
 	}
+	public TypeDec clone(){
+		if(next != null)return new  TypeDec(pos, name, ty.clone(), next.clone());
+		return new  TypeDec(pos, name, ty.clone(), null);
+	}
 }
