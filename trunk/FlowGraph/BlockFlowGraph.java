@@ -21,18 +21,7 @@ public class BlockFlowGraph extends FlowGraph {
 				labelToNode.put(block.label, node);
 			if(prenode != null && !(instr(prenode).last instanceof JUMP))addEdge(prenode, node);
 		}
-		// if(instrs.head instanceof LABEL)
-		// 	labelToNode.put(((LABEL)instrs.head).label, prenode);
-		// instrs = instrs.tail;
-		// while(instrs != null){
-		// 	Node node = newNode();
-		// 	nodeToInstr.put(node, instrs.head);
-		// 	if(instrs.head instanceof LABEL)
-		// 		labelToNode.put(((LABEL)instrs.head).label, node);
-		// 	if(!nodeToInstr.get(prenode).assem.equals("j `j0"))addEdge(prenode, node);
-		// 	prenode = node;
-		// 	instrs = instrs.tail;
-		// }
+
 		NodeList nodeList = nodes();
 		while(nodeList != null){
 			BasicBlock instr = nodeToInstr.get(nodeList.head);
@@ -46,7 +35,9 @@ public class BlockFlowGraph extends FlowGraph {
 					addEdge(nodeList.head, targetNode);
 					labels = labels.tail;
 				}
-				/*				if(lastOfBlock instanceof JUMP) {
+				/*
+				  Jump zipping
+				  if(lastOfBlock instanceof JUMP) {
 					Instr preSecondInstr = lastOfBlock;
 					Instr secondInstr = new BINOP("addi",null, null, null, 0, -1);
 					Temp.Label dstLabel = targetsLabels.labels.head;

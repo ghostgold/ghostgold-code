@@ -5,13 +5,16 @@ public class CALL extends Instr
 	Temp.TempList dsts;
 	Temp.TempList srcs;
 	Targets jump;
-
-	public CALL(String a, Temp.TempList d, Temp.TempList s, Temp.LabelList j) {
+	Temp.Label name;
+	public CALL(String a, Temp.TempList d, Temp.TempList s, Temp.Label name) {
 		//		super(a,null,null, null, 0,j, -1);
 		assem = a;
 		dsts = d;
 		srcs = s;
-		jump=new Targets(j);
+		if(name == null)
+			jump = new Targets(null);
+		else 
+			jump=new Targets(new Temp.LabelList(name, null));
 	}
 	public Temp.TempList use(){
 		return srcs;

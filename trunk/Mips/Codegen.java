@@ -268,9 +268,9 @@ public class Codegen {
 			String name = (((Tree.NAME)call.func).label).toString();
 			String preffix = "_";
 			if(name.startsWith(preffix))
-				emit(new Assem.CALL("jal `j0 ", frame.syscalldefs(), l, new Temp.LabelList(((Tree.NAME)call.func).label, null)));
+				emit(new Assem.CALL("jal `j0 ", frame.syscalldefs(), l, ((Tree.NAME)call.func).label));
 			else
-				emit(new Assem.CALL("jal `j0 ", frame.calldefs(), l, new Temp.LabelList(((Tree.NAME)call.func).label, null)));
+				emit(new Assem.CALL("jal `j0 ", frame.calldefs(), l, ((Tree.NAME)call.func).label));
 			return frame.RV();
 		}
 		if(e instanceof Tree.NAME){
