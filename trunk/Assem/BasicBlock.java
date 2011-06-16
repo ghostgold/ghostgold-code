@@ -42,6 +42,13 @@ public class BasicBlock
 			src = new Temp.TempList(it.next(), src);
 		}
 	}
+	public ArrayList<Instr> toArrayListReverse(){
+		ArrayList<Instr> ans = new ArrayList();
+		for(InstrList i = reverseInstrs; i != null; i = i.tail){
+			ans.add(i.head);
+		}
+		return ans;
+	}
 	InstrList reverse(InstrList ins){
 		InstrList ans = null;
 		while(ins != null){

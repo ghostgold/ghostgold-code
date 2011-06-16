@@ -87,7 +87,7 @@ public class MipsFrame implements Frame{
 	public static TempList parameterReg = L(a0, L(a1, L(a2, L(a3,null))));
 	public static TempList calleesaves = L(s0, L (s1, L(s2, L(s3, L(s4, L(s5, L(s6, L(s7, L(ra,null)))))))));
 	public static TempList callersaves = L(t0, L(t1, L (t2, L(t3, L(t4, L(t5, L(t6, L(t7, L(t8, L(t9,null))))))))));
-	public static TempList returnsink = L(zero,L(ra, L(sp, calleesaves)));
+	public static TempList returnsink = L(v0,L(zero,L(ra, L(sp, calleesaves))));
 
 	int allocPoint = -2*wordSize();//local varival begin at -4;
 	int outGoing = 0;

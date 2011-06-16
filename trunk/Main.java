@@ -20,6 +20,8 @@ public class Main {
 		boolean printIR = false;
 		boolean printAssem = true;
 		boolean allocTemp = true;
+		boolean absynOpt = true;
+		boolean flowOpt = true;
 		//=========================================================
 
 		Lexer scanner = new Lexer(inp,errorSender);
@@ -39,12 +41,14 @@ public class Main {
 			absyn = (Absyn.Exp)(parseTree.value);
 			printer = new Absyn.Print(System.out);
 			AbsynOpt.ReNaming rename  = new AbsynOpt.ReNaming(null);
-			absyn = rename.renameExp(absyn);
-			absyn = AbsynOpt.Inline.inlineExp(absyn);
-			AbsynOpt.FindConst.findConstExp(absyn);
-			absyn = AbsynOpt.CopyConst.copyConstExp(absyn);
-			absyn = AbsynOpt.LoopExpantion.loopExpantion(absyn);
+			if(absynOpt){
+				absyn = rename.renameExp(absyn);				System.out.println("rename done");
+				absyn = AbsynOpt.Inline.inlineExp(absyn);				System.out.println("inline done");
+				AbsynOpt.FindConst.findConstExp(absyn);				System.out.println("find const done");
+				absyn = AbsynOpt.CopyConst.copyConstExp(absyn);				System.out.println("copy const done");
+				absyn = AbsynOpt.LoopExpantion.loopExpantion(absyn);				System.out.println("loop expantion done");
 
+			}
 			if(printAbsyn){
 				printer.prExp(absyn,4);
 				System.out.print("\n==============================\n\n");
@@ -107,6 +111,7 @@ public class Main {
 				assem = funcframe.procEntryExit2(assem);
 				assem = funcframe.procEntryExit3(assem);
 				ArrayList<Assem.BasicBlock> basicblocks = Assem.BasicBlock.Partition(assem);
+				if(flowOpt)RegAlloc.FlowOpt.flowOpt(basicblocks);
 				if(allocTemp){
 					regmap.alloc(basicblocks,28,funcframe,true);
 					basicblocks = regmap.getProgram();
@@ -149,9 +154,8 @@ public class Main {
 		RegAlloc.RegAlloc regmap = new RegAlloc.RegAlloc();
 		assem.append(new Assem.InstrList(new Assem.CALL("jal _exit", null, new Temp.TempList(funcframe.ZERO(), new Temp.TempList(funcframe.SP(), null)), null), null));
 		assem = funcframe.procEntryExit3(assem);
-		
 		ArrayList<Assem.BasicBlock> basicblocks = Assem.BasicBlock.Partition(assem);
-
+		if(flowOpt)RegAlloc.FlowOpt.flowOpt(basicblocks);
 		if(allocTemp){regmap.alloc(basicblocks,28,topFrame,true);
 			basicblocks = regmap.getProgram();
 		}

@@ -2,9 +2,13 @@ package Assem;
 import Temp.*;
 public abstract class Instr {
 	//	public final static int ADD=0, SUB=1, MUL=2, DIV=3, LW = 4, SW = 5, BEQ = 6 ;
+	public boolean dead;
 	public int opcode;
 	public String assem;
 	public int constant;
+	public String toString(){
+		return "";
+	}
 	public abstract TempList use();
 	public abstract TempList def();
 	//	public abstract void setUse(Temp.TempList s);

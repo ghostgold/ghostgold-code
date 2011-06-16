@@ -10,5 +10,26 @@ public class BINOP extends OPER
 	public BINOP(String a, Temp d, Temp l, Temp r,int c,  int opcode) {
 		super(a,d,l,r,c, opcode);
 	}
+	public String toString(){
+		switch(opcode){
+		case ADD: 
+			return "add (" + left.toString() + ") (" + right.toString() + ")";
+		case ADDI:
+			return "addi (" + left.toString() + ") " + constant;
+		case SUB:
+			return "sub (" + left.toString() + ") (" + right.toString() + ")";
+		case MUL:
+			return "mul (" + left.toString() + ") (" + right.toString() + ")";
+		case DIV:
+			return "div (" + left.toString() + ") (" + right.toString() + ")";
+		case LI:
+			return "li " + constant;
+		case LA:
+			return assem;
+		case SLL:
+			return "sll (" + left.toString() + ") " + constant ;
+		}
+		return "";
+	}
 }
 

@@ -12,5 +12,16 @@ public class MEM extends OPER
 		super(a,d,l,r,c,opcode);
 		frame = f;
 	}
+	public String toString(){
+		if(opcode == LW)
+			return "lw " + constant + "(" + left.toString() + ")";
+		else
+			return "";
+	}
+	public boolean aboutStack(){
+		if(right == frame.FP() || right == frame.SP() || right == frame.FFP())return true;
+		return false;
+	}
+
 }
 

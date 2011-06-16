@@ -5,9 +5,14 @@ import java.util.*;
 public class BlockFlowGraph extends FlowGraph {
 	public java.util.Dictionary<Node,BasicBlock> nodeToInstr = new Hashtable();
 	public java.util.Dictionary<Temp.Label, Node> labelToNode = new Hashtable();
+	public java.util.Dictionary<BasicBlock, Node> instrToNode = new Hashtable();
 	public BasicBlock instr(Node n){
 		return (BasicBlock)nodeToInstr.get(n);
 	}
+	public Node getNodeOfInstr(BasicBlock bb){
+		return instrToNode.get(bb);
+	}
+	public Node entry;
 	public BlockFlowGraph(ArrayList<BasicBlock> blocks){
 		ListIterator<BasicBlock> it = blocks.listIterator();
 		Node node = null;
@@ -17,9 +22,12 @@ public class BlockFlowGraph extends FlowGraph {
 			BasicBlock block = it.next();
 			node = newNode();
 			nodeToInstr.put(node, block);
+			instrToNode.put(block, node);
 			if(block.label != null)
 				labelToNode.put(block.label, node);
 			if(prenode != null && !(instr(prenode).last instanceof JUMP))addEdge(prenode, node);
+			if(prenode == null)
+				entry = node;
 		}
 
 		NodeList nodeList = nodes();

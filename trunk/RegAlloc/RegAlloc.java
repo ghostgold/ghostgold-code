@@ -16,33 +16,33 @@ public class RegAlloc implements Temp.TempMap{
 		return frame.getReg(x).toString();
 	}
 		
-	Set<Node> simplifyWorkList = new HashSet();
-	Set<Node> freezeWorkList = new HashSet();
+	Set<Node> simplifyWorkList = new LinkedHashSet();
+	Set<Node> freezeWorkList = new LinkedHashSet();
 	Comparator<Node> spillComparator;
    	PriorityQueue<Node> spillWorkList;
 	
 
-	Set<Node> spilledNodes = new HashSet();
-	Set<Node> coalescedNodes = new HashSet();
-	Set<Node> coloredNodes = new HashSet();
+	Set<Node> spilledNodes = new LinkedHashSet();
+	Set<Node> coalescedNodes = new LinkedHashSet();
+	Set<Node> coloredNodes = new LinkedHashSet();
 	Stack<Node> selectStack = new Stack();
 	
 
-	Set<Node> precolored = new  HashSet();
-	Set<Node> initial = new HashSet();
+	Set<Node> precolored = new  LinkedHashSet();
+	Set<Node> initial = new LinkedHashSet();
 
-	Set<Move> workListMoves = new HashSet();
-	Set<Move> activeMoves = new HashSet();
-	Set<Move> frozenMoves = new HashSet();
-	Set<Move> coalescedMoves = new HashSet();
-	Set<Move> constrainedMoves = new HashSet();
+	Set<Move> workListMoves = new LinkedHashSet();
+	Set<Move> activeMoves = new LinkedHashSet();
+	Set<Move> frozenMoves = new LinkedHashSet();
+	Set<Move> coalescedMoves = new LinkedHashSet();
+	Set<Move> constrainedMoves = new LinkedHashSet();
 		
-	Dictionary<Node, Integer> degree = new Hashtable();
-	Dictionary<Node, Set<Move>> moveList = new Hashtable();
-	Dictionary<Node, Node> alias = new Hashtable();
-	Dictionary<Node, Integer> paintColor =new Hashtable();
+	Map<Node, Integer> degree = new LinkedHashMap();
+	Map<Node, Set<Move>> moveList = new LinkedHashMap();
+	Map<Node, Node> alias = new LinkedHashMap();
+	Map<Node, Integer> paintColor =new LinkedHashMap();
 	
-	HashSet<Integer> allColors = new HashSet();
+	LinkedHashSet<Integer> allColors = new LinkedHashSet();
 	BlockFlowGraph controlFlow; 
 	BlockLiveness liveness;
 	InterferenceGraph interference;
@@ -78,7 +78,7 @@ public class RegAlloc implements Temp.TempMap{
 		for(NodeList t = nodes; t != null; t = t.tail)
 			if(! interference.gtemp(t.head).precolored())initial.add(t.head);
 		for(NodeList t= nodes; t != null; t = t.tail)
-			moveList.put(t.head, new HashSet());
+			moveList.put(t.head, new LinkedHashSet());
 		//		System.err.println("================build begin===============");
 		build();
 		//		System.err.println("================build done===============");
@@ -261,9 +261,7 @@ public class RegAlloc implements Temp.TempMap{
 		}
 	}
 	void makeWorkList(){
-		Iterator<Node> t = initial.iterator();
-		while(t.hasNext()){
-			Node node = t.next();
+		for(Node node: initial){
 			if(degree.get(node).intValue() >= regNum)
 				spillWorkList.add(node);
 			else if( moveRelated(node))
@@ -350,7 +348,7 @@ public class RegAlloc implements Temp.TempMap{
 			}
 			else{
 				condition2 = true;
-				Set<Node> tset = new  HashSet();
+				Set<Node> tset = new  LinkedHashSet();
 				for(NodeList nodes = adj(u); nodes != null; nodes = nodes.tail)
 					tset.add(nodes.head);
 				for(NodeList nodes = adj(v); nodes != null; nodes = nodes.tail)
@@ -451,7 +449,7 @@ public class RegAlloc implements Temp.TempMap{
 	void assignColors(){
 		while(!selectStack.empty()){
 			Node node = selectStack.pop();
-			HashSet<Integer> colors = (HashSet)allColors.clone();
+			LinkedHashSet<Integer> colors = (LinkedHashSet)allColors.clone();
 			for(NodeList l = node.succ(); l != null; l = l.tail){
 				Node w = getAlias(l.head);
 				if(coloredNodes.contains(w) || precolored.contains(w) ){
