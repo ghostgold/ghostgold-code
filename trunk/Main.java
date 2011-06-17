@@ -21,7 +21,8 @@ public class Main {
 		boolean printAssem = true;
 		boolean allocTemp = true;
 		boolean absynOpt = true;
-		boolean flowOpt = true;
+		boolean irOpt = true;
+		boolean flowOpt = false;
 		//=========================================================
 
 		Lexer scanner = new Lexer(inp,errorSender);
@@ -96,6 +97,9 @@ public class Main {
 				funcframe.procEntryExit1(stm);
 				Canon.TraceSchedule trace = new Canon.TraceSchedule(new Canon.BasicBlocks(Canon.Canon.linearize(stm)));
 				Tree.StmList  stmlist = trace.stms;
+				if(irOpt)
+					for(Tree.StmList s = stmlist; s!= null; s = s.tail)
+						s.head = Tree.ConstFolding.constFolding(s.head);
 				Assem.InstrList assem = funcframe.codegen(stmlist.head);			
 				stmlist = stmlist.tail;
 				//				System.out.println(funcframe.getName().toString());
@@ -111,11 +115,13 @@ public class Main {
 				assem = funcframe.procEntryExit2(assem);
 				assem = funcframe.procEntryExit3(assem);
 				ArrayList<Assem.BasicBlock> basicblocks = Assem.BasicBlock.Partition(assem);
-				if(flowOpt)RegAlloc.FlowOpt.flowOpt(basicblocks);
+				if(flowOpt)RegAlloc.FlowOpt.flowOpt(basicblocks, funcframe);
+
 				if(allocTemp){
 					regmap.alloc(basicblocks,28,funcframe,true);
 					basicblocks = regmap.getProgram();
 				}
+
 				Temp.TempMap tempmap;
 				if(allocTemp)tempmap = regmap;
 				else tempmap = defaultMap;
@@ -141,6 +147,9 @@ public class Main {
 		funcframe.procEntryExit1(stm);
 		Canon.TraceSchedule trace = new Canon.TraceSchedule(new Canon.BasicBlocks(Canon.Canon.linearize(stm)));
 		Tree.StmList  stmlist = trace.stms;
+		if(irOpt)
+			for(Tree.StmList s = stmlist; s!= null; s = s.tail)
+				s.head = Tree.ConstFolding.constFolding(s.head);
 		Assem.InstrList assem = funcframe.codegen(stmlist.head);			
 		//		System.out.println(funcframe.getName().toString());
 		if(printIR)irPrinter.prStm(stmlist.head);
@@ -155,7 +164,7 @@ public class Main {
 		assem.append(new Assem.InstrList(new Assem.CALL("jal _exit", null, new Temp.TempList(funcframe.ZERO(), new Temp.TempList(funcframe.SP(), null)), null), null));
 		assem = funcframe.procEntryExit3(assem);
 		ArrayList<Assem.BasicBlock> basicblocks = Assem.BasicBlock.Partition(assem);
-		if(flowOpt)RegAlloc.FlowOpt.flowOpt(basicblocks);
+		if(flowOpt)RegAlloc.FlowOpt.flowOpt(basicblocks, funcframe);
 		if(allocTemp){regmap.alloc(basicblocks,28,topFrame,true);
 			basicblocks = regmap.getProgram();
 		}

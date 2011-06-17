@@ -7,19 +7,210 @@ import Graph.*;
 public class FlowOpt
 {
 	static boolean change;
-	public static void flowOpt(ArrayList<BasicBlock> instr){
+	public static void flowOpt(ArrayList<BasicBlock> instr, Frame.Frame frame){
 		change = true;
 		while(change){
 			change = false;
+			subexpressionElimination(instr, frame);		
 			copyPropgation(instr);
-			//subexpressionElimination(instr);
 			deadCodeElimination(instr);
 		}
-
 	}
-	public static void subexpressionElimination(ArrayList<BasicBlock> instr){
+	public static void subexpressionElimination(ArrayList<BasicBlock> instr, Frame.Frame frame){
 		BlockFlowGraph flow = new BlockFlowGraph(instr);
+		LinkedHashSet<String>  total = new LinkedHashSet();
+		Map<Node, Set<String>> evalSet = new LinkedHashMap();
+		Map<Node, Set<String>> availIn = new LinkedHashMap();
+		Map<Node, Set<String>> availOut = new LinkedHashMap();
+
+		for(NodeList nodes = flow.nodes(); nodes != null; nodes = nodes.tail){
+			Set<String> acp = subexpressionLocalElimination(flow.instr(nodes.head));
+			evalSet.put(nodes.head, acp);
+			total.addAll(acp);
+		}
 		
+		for(NodeList nodes = flow.nodes(); nodes != null; nodes = nodes.tail){
+			availIn.put(nodes.head, (Set)total.clone());
+			availOut.put(nodes.head, (Set)total.clone());
+		}
+
+		availIn.put(flow.entry, new LinkedHashSet());
+		boolean flowChange = true;
+		while(flowChange){
+			flowChange = false;
+			for(BasicBlock block : instr){
+				//node is what to be done with in and out
+				Node node = flow.getNodeOfInstr(block);
+				NodeList pred = node.pred();
+				Set<String> oldIn = availIn.get(node);
+				Set<String> newIn;
+				if(pred != null){
+					newIn = new LinkedHashSet(availOut.get(pred.head));
+					for(NodeList p = pred.tail; p != null; p = p.tail){
+						newIn.retainAll(availOut.get(p.head));
+					}
+				}
+				else newIn = new LinkedHashSet();
+				if(!newIn.equals(oldIn)){
+					flowChange = true;
+					availIn.put(node, newIn);
+				}
+				LinkedHashSet<String> newOut = new LinkedHashSet(newIn);
+				ArrayList<String> del = new ArrayList();
+				for(InstrList i = block.instrs; i != null; i = i.tail ){
+					for(TempList def = i.head.def(); def != null; def = def.tail){
+						for(String s : newOut){
+							if(s.indexOf("("+def.head.toString()+")") >= 0)del.add(s);
+						}
+					}
+					if(i.head.opcode == MEM.SW){
+						for(String s : newOut){
+							if(s.startsWith("lw") && !s.endsWith("nc") && aboutStack(s,frame) == ((MEM)i.head).aboutStack())
+								del.add(s);
+						}
+					}	
+					if(i.head instanceof CALL){
+						for(String s: newOut){
+							if(s.startsWith("lw") && !s.endsWith("nc")){
+								del.add(s);
+							}
+						}
+					}
+				}
+				for(String s : del)
+					newOut.remove(s);
+		
+				newOut.addAll(evalSet.get(node));
+				if(!newOut.equals(availOut.get(node))){
+					availOut.put(node, newOut);
+					flowChange = true;
+				}
+			}
+		}
+		for(NodeList node = flow.nodes(); node != null; node = node.tail){
+			/*			System.out.println(flow.instr(node.head).label.toString());
+			for(String s: availIn.get(node.head))
+				System.out.print(s+" ");
+				System.out.println();*/
+			subexpressionLocalElimination(flow.instr(node.head), availIn.get(node.head), flow, frame);
+		}
+	}
+	static void replaceCommonExpression(BasicBlock block, String s, Temp replace, BlockFlowGraph flow){
+
+		ArrayList<Instr> reverseInstr = block.toArrayListReverse();
+		InstrList newInstr = null;
+		boolean done = false;
+		for(Instr i : reverseInstr){
+			if(done == false && s.equals(i.toString())){
+				Temp oldDst = ((OPER)i).dst;
+				newInstr = new InstrList(new MOVE("move `d0 `s0", oldDst, replace), newInstr);
+				((OPER)i).setDst(replace);
+				done = true;
+				change = true;
+			}
+			newInstr = new InstrList(i, newInstr);
+		}
+		if(done){
+			block.setInstrs(newInstr);
+		}
+		else{
+			Node node = flow.getNodeOfInstr(block);
+			for(NodeList n = node.pred(); n != null; n = n.tail){
+				replaceCommonExpression(flow.instr(n.head), s, replace, flow);
+			}
+		}
+	}
+	static void subexpressionLocalElimination(BasicBlock block, Set<String> aep, BlockFlowGraph flow, Frame.Frame frame){
+		System.out.println(block.label);
+		for(String s: aep)
+			System.out.print(s+" ");
+		System.out.println();
+		
+		for(InstrList i = block.instrs; i != null; i = i.tail ){
+			String assem = i.head.toString();
+			if(aep.contains(assem)){
+				change = true;
+				OPER oper = (OPER)i.head;
+				Temp replace = new Temp();
+				if(oper.dst == null)System.out.println("fuck");
+				i.head = new MOVE("move `d0 `s0", oper.dst, replace);
+				Node node = flow.getNodeOfInstr(block);
+				for(NodeList n = node.pred(); n != null; n = n.tail){
+					replaceCommonExpression(flow.instr(n.head), assem, replace, flow);
+				}
+			}
+			ArrayList<String> del = new ArrayList();
+			for(TempList def = i.head.def(); def != null; def = def.tail){
+				for(String s : aep){
+					if(s.indexOf("("+def.head.toString()+")") >= 0)del.add(s);
+				}
+			}
+			if(i.head.opcode == MEM.SW){
+				for(String s : aep){
+					if(s.startsWith("lw") && !s.endsWith("nc") && aboutStack(s, frame) == ((MEM)i.head).aboutStack())
+						del.add(s);
+				}
+			}	
+			if(i.head instanceof CALL){
+				for(String s: aep){
+					if(s.startsWith("lw") && !s.endsWith("nc")){
+						del.add(s);
+					}
+				}
+			}
+			for(String s : del)
+				aep.remove(s);
+		}
+		block.setInstrs(block.instrs);
+	}
+	static boolean aboutStack(String s, Frame.Frame f){
+		if(s.indexOf(f.FP().toString()) >= 0)return true;
+		if(s.indexOf(f.FFP().toString()) >= 0)return true;
+		if(s.indexOf(f.SP().toString()) >= 0)return true;
+		return false;
+	}
+	public static Set<String> subexpressionLocalElimination(BasicBlock block){
+		InstrList instr = block.instrs;
+		Map<String, InstrListTemp> avExp = new LinkedHashMap();
+		for(InstrList i = instr; i != null; i = i.tail){
+			String assem = i.head.toString();
+			if(!assem.equals("---")){
+				OPER exp = (OPER)i.head;
+				InstrListTemp it = avExp.get(assem);
+				if(it != null){
+					change = true;
+					//					System.out.println(exp.dst.toString());
+					if (it.temp != null){
+						i.head = new MOVE("move `d0 `s0", exp.dst, it.temp);
+					}
+					else{
+						OPER preexp = (OPER)it.instr.head;
+						it.temp = new Temp();
+						Temp predst = preexp.dst;
+						preexp.setDst(it.temp);
+						it.instr.tail = new InstrList(new MOVE("move `d0 `s0",predst, it.temp), it.instr.tail);
+						i.head = new MOVE("move `d0 `s0", exp.dst, it.temp);
+					}
+				}
+				else avExp.put(assem, new InstrListTemp(i));
+			}
+			ArrayList<String> del = new ArrayList();
+			for(TempList def = i.head.def(); def != null; def = def.tail){
+				for(String s :avExp.keySet()){
+					if(s.indexOf("("+def.head.toString()+")") >= 0)del.add(s);
+				}
+			}
+			if((i.head instanceof MEM && i.head.opcode == MEM.SW) || i.head instanceof CALL){
+				for(Map.Entry<String, InstrListTemp> av: avExp.entrySet()){
+					if(av.getValue().instr.head.killedBySwOrCall(i.head))
+						del.add(av.getKey());
+				}
+			}
+			for(String d : del)
+				avExp.remove(d);
+		}
+		block.setInstrs(instr);
+		return avExp.keySet();
 	}
 	public static void deadCodeElimination(ArrayList<BasicBlock> instrs){
 		BlockFlowGraph flow = new BlockFlowGraph(instrs);

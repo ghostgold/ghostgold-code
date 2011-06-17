@@ -7,7 +7,10 @@ public abstract class Instr {
 	public String assem;
 	public int constant;
 	public String toString(){
-		return "";
+		return "---";
+	}
+	public boolean killedBySwOrCall(Instr s){
+		return false;
 	}
 	public abstract TempList use();
 	public abstract TempList def();

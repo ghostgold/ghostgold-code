@@ -3,6 +3,7 @@ package Assem;
 import Temp.*;
 public class MEM extends OPER
 {
+	public boolean neverChange = false;
 	public final static int LW = 30, SW = 31;
 	/*	public BINOP(String a, Temp d, Temp l,Temp r, int c, Frame.Frame f,  LabelList j, int opcode) {
 		super(a,d,l,r,c,f,j,opcode);
@@ -13,14 +14,27 @@ public class MEM extends OPER
 		frame = f;
 	}
 	public String toString(){
-		if(opcode == LW)
+		if(opcode == LW){
+			if(neverChange) return  "lw " + constant + "(" + left.toString() + ")nc";
 			return "lw " + constant + "(" + left.toString() + ")";
+		}
 		else
-			return "";
+			return "---";
 	}
 	public boolean aboutStack(){
 		if(right == frame.FP() || right == frame.SP() || right == frame.FFP())return true;
 		return false;
+	}
+	public boolean killedBySwOrCall(Instr i){
+		if(i.opcode != MEM.SW && !( i instanceof CALL))
+			return false;
+		if(this.neverChange)return false;
+		if(i.opcode == MEM.SW){
+			MEM mem = (MEM)i;
+			if(this.aboutStack() ^ mem.aboutStack())return false;
+			else return true;
+		}
+		else return true;
 	}
 
 }

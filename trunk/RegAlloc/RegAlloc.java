@@ -76,7 +76,10 @@ public class RegAlloc implements Temp.TempMap{
 		}
 		NodeList nodes  = interference.nodes();
 		for(NodeList t = nodes; t != null; t = t.tail)
-			if(! interference.gtemp(t.head).precolored())initial.add(t.head);
+			if(! interference.gtemp(t.head).precolored()){
+				initial.add(t.head);
+			}
+
 		for(NodeList t= nodes; t != null; t = t.tail)
 			moveList.put(t.head, new LinkedHashSet());
 		//		System.err.println("================build begin===============");
@@ -84,11 +87,24 @@ public class RegAlloc implements Temp.TempMap{
 		//		System.err.println("================build done===============");
 		//		interference.show(System.out);
 		makeWorkList();
+		//		System.out.println("new");
 		while(true){
-			if(!simplifyWorkList.isEmpty())simplify();
-			else if(!workListMoves.isEmpty())coalesce();
-			else if(!freezeWorkList.isEmpty())freeze();
-			else if(!spillWorkList.isEmpty())selectSpill(); 
+			if(!simplifyWorkList.isEmpty()){
+				simplify();
+				//				System.out.println("simplify");
+			}
+			else if(!workListMoves.isEmpty()){
+				coalesce();
+				//				System.out.println("coalesce");
+			}
+			else if(!freezeWorkList.isEmpty()){
+				freeze();
+				//				System.out.println("freeze");
+			}
+			else if(!spillWorkList.isEmpty()){
+								selectSpill(); 
+				//				System.out.println("selectSpill");
+			}
 			if(simplifyWorkList.isEmpty() && workListMoves.isEmpty() && freezeWorkList.isEmpty()&& spillWorkList.isEmpty() )break;
 		}
 		assignColors();
@@ -240,7 +256,11 @@ public class RegAlloc implements Temp.TempMap{
 			}
 
 		}
+		for(Node node: precolored){
+			degree.put(node, new Integer(10000000));
+		}
 		Iterator<Node> a = precolored.iterator();
+
 		while(a.hasNext()){
 			Node x = a.next();
 			Iterator<Node> b= precolored.iterator();
@@ -449,6 +469,7 @@ public class RegAlloc implements Temp.TempMap{
 	void assignColors(){
 		while(!selectStack.empty()){
 			Node node = selectStack.pop();
+			//			System.out.println(interference.gtemp(node));
 			LinkedHashSet<Integer> colors = (LinkedHashSet)allColors.clone();
 			for(NodeList l = node.succ(); l != null; l = l.tail){
 				Node w = getAlias(l.head);
@@ -456,8 +477,10 @@ public class RegAlloc implements Temp.TempMap{
 					colors.remove(paintColor.get(w));
 				}
 			}
-			if(colors.isEmpty())
+			if(colors.isEmpty()){
+				//				System.out.println(interference.gtemp(node));
 				spilledNodes.add(node);
+			}
 			else {
 				coloredNodes.add(node);
 				paintColor.put(node, colors.iterator().next());
