@@ -5,7 +5,6 @@ public class BasicBlock
 	Temp.TempList dst = null;
 	Temp.TempList src = null;
 	Temp.TempList temps = null;
-
 	public InstrList instrs;
 	public InstrList reverseInstrs;
 	public Temp.Label label = null;

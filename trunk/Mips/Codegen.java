@@ -75,13 +75,21 @@ public class Codegen {
 						return;
 					}
 					if(binop.left instanceof Tree.CONST){
-						emit(new Assem.BINOP("addi `d0 `s0 `i" ,dst, munchExp(binop.right), null, 
-											 ((Tree.CONST)left).value,  Assem.BINOP.ADDI));
+						int value = ((Tree.CONST)left).value;
+						if(value == 0)
+							emit(new Assem.MOVE("move `d0 `s0", dst, munchExp(binop.right)));
+						else  
+							emit(new Assem.BINOP("addi `d0 `s0 `i" ,dst, munchExp(binop.right), null, 
+												 value,  Assem.BINOP.ADDI));
 						return;
 					}
 					if(binop.right instanceof Tree.CONST){
-						emit(new Assem.BINOP("addi `d0 `s0 `i" ,dst, munchExp(binop.left), null, 
-											 ((Tree.CONST)right).value,  Assem.BINOP.ADDI));
+						int value = ((Tree.CONST)right).value;
+						if(value == 0)
+							emit(new Assem.MOVE("move `d0 `s0", dst, munchExp(binop.left)));
+						else  
+							emit(new Assem.BINOP("addi `d0 `s0 `i" ,dst, munchExp(binop.left), null, 
+												 value,  Assem.BINOP.ADDI));
 						return;
 					}
 					break;
@@ -93,8 +101,12 @@ public class Codegen {
 						return;
 					}
 					if(binop.right instanceof Tree.CONST){
-						emit(new Assem.BINOP("addi `d0 `s0 `i" , dst, munchExp(binop.left), null,
-											-(((Tree.CONST)right).value),  Assem.BINOP.ADDI));
+						int value = ((Tree.CONST)right).value;
+						if(value == 0)
+							emit(new Assem.MOVE("move `d0 `s0", dst, munchExp(binop.left)));
+						else  
+							emit(new Assem.BINOP("addi `d0 `s0 `i" ,dst, munchExp(binop.left), null, 
+												 -value,  Assem.BINOP.ADDI));
 						return;
 					}
 					break;
@@ -395,13 +407,20 @@ public class Codegen {
 				return dst;
 			}
 			if(binop.left instanceof Tree.CONST){
-				emit(new Assem.BINOP("addi `d0 `s0 `i ", dst, munchExp(binop.right), null,
-									 ((Tree.CONST)left).value, Assem.BINOP.ADDI));
+				int value = ((Tree.CONST)left).value;
+				if(value == 0)
+					emit(new Assem.MOVE("move `d0 `s0", dst, munchExp(binop.right)));
+				else 
+					emit(new Assem.BINOP("addi `d0 `s0 `i ", dst, munchExp(binop.right), null,
+									 value, Assem.BINOP.ADDI));
 				return dst;
 			}
 			if(binop.right instanceof Tree.CONST){
-				emit(new Assem.BINOP("addi `d0 `s0 `i", dst, munchExp(binop.left), null,
-									 ((Tree.CONST)right).value, Assem.BINOP.ADDI));
+				int value = ((Tree.CONST)right).value;
+				if(value == 0)
+					emit(new Assem.MOVE("move `d0 `s0", dst, munchExp(binop.left)));
+				else emit(new Assem.BINOP("addi `d0 `s0 `i", dst, munchExp(binop.left), null,
+										  value, Assem.BINOP.ADDI));
 				return dst;
 			}
 			break;
@@ -413,8 +432,11 @@ public class Codegen {
 				return dst;
 			}
 			if(binop.right instanceof Tree.CONST){
-				emit(new Assem.BINOP("addi `d0 `s0 `i", dst, munchExp(binop.left), null,
-									 -((Tree.CONST)right).value, Assem.BINOP.ADDI));
+				int value = ((Tree.CONST)right).value;
+				if(value == 0)
+					emit(new Assem.MOVE("move `d0 `s0", dst, munchExp(binop.left)));
+				else emit(new Assem.BINOP("addi `d0 `s0 `i", dst, munchExp(binop.left), null,
+									 -value, Assem.BINOP.ADDI));
 				return dst;
 			}
 			break;

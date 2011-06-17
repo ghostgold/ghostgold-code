@@ -20,6 +20,27 @@ public class ConstFolding
 					return new CONST(((CONST)e.left).value / ((CONST)e.right).value);				
 			}
 		}
+		if(e.binop == BINOP.MUL){
+			if(e.left instanceof CONST)
+				if( ((CONST)e.left).value == 0)return new CONST(0);
+			if(e.right instanceof CONST)
+				if( ((CONST)e.right).value == 0)return new CONST(0);
+			if(e.left instanceof BINOP){
+				BINOP left = (BINOP)e.left;
+				if(left.binop == BINOP.PLUS || left.binop == BINOP.MINUS){
+					return new BINOP(left.binop, constFolding(new BINOP(BINOP.MUL, left.left, e.right)), 
+									 constFolding(new BINOP(BINOP.MUL, left.right, e.right)));
+				}
+			}
+			if(e.right instanceof BINOP){
+				BINOP right = (BINOP)e.right;
+				if(right.binop == BINOP.PLUS || right.binop == BINOP.MINUS){
+					return new BINOP(right.binop, constFolding(new BINOP(BINOP.MUL, e.left, right.left)), 
+									 constFolding(new BINOP(BINOP.MUL, e.left, right.right)));
+				}
+			}
+
+		}
 		return e;
 	}
 	public static Exp constFolding(MEM e){

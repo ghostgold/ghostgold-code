@@ -7,23 +7,35 @@ public class Main {
 
 	public static void main(String argv[])
 		throws java.io.IOException, java.lang.Exception{
-		String filename = argv[0];
-		String suffix = ".tig";
-		ErrorMsg.ErrorMsg errorSender = new ErrorMsg.ErrorMsg(filename);
-		java.io.InputStream inp = new java.io.FileInputStream(filename);
-		if (!filename.endsWith(suffix)){
-			System.out.println("filename should be end with .tig");
-			return;
-		}
 		//===========================================================
 		boolean printAbsyn = false;
 		boolean printIR = false;
 		boolean printAssem = true;
 		boolean allocTemp = true;
-		boolean absynOpt = true;
-		boolean irOpt = true;
-		boolean flowOpt = false;
+		boolean absynOpt = false;
+		boolean irOpt = false;
+		boolean flowOpt = false ;
 		//=========================================================
+
+		String suffix = ".tig";
+		String filename = "";
+		for(String s: argv){
+			if(s.endsWith(suffix))
+				 filename = argv[0];
+			if(s.equals("-O")){
+				absynOpt = true;
+				irOpt = true;
+				flowOpt = true;
+			}
+		}
+
+		if (!filename.endsWith(suffix)){
+			System.out.println("filename should be end with .tig");
+			return;
+		}
+
+		ErrorMsg.ErrorMsg errorSender = new ErrorMsg.ErrorMsg(filename);
+		java.io.InputStream inp = new java.io.FileInputStream(filename);
 
 		Lexer scanner = new Lexer(inp,errorSender);
 		Parser par = new Parser(scanner);
@@ -43,12 +55,16 @@ public class Main {
 			printer = new Absyn.Print(System.out);
 			AbsynOpt.ReNaming rename  = new AbsynOpt.ReNaming(null);
 			if(absynOpt){
-				absyn = rename.renameExp(absyn);				System.out.println("rename done");
-				absyn = AbsynOpt.Inline.inlineExp(absyn);				System.out.println("inline done");
-				AbsynOpt.FindConst.findConstExp(absyn);				System.out.println("find const done");
-				absyn = AbsynOpt.CopyConst.copyConstExp(absyn);				System.out.println("copy const done");
-				absyn = AbsynOpt.LoopExpantion.loopExpantion(absyn);				System.out.println("loop expantion done");
-
+				absyn = rename.renameExp(absyn);
+				//System.out.println("rename done");
+				absyn = AbsynOpt.Inline.inlineExp(absyn);				
+				//System.out.println("inline done");
+				AbsynOpt.FindConst.findConstExp(absyn);
+				//System.out.println("find const done");
+				absyn = AbsynOpt.CopyConst.copyConstExp(absyn);				
+				//System.out.println("copy const done");
+				absyn = AbsynOpt.LoopExpantion.loopExpantion(absyn);
+				//System.out.println("loop expantion done");
 			}
 			if(printAbsyn){
 				printer.prExp(absyn,4);
