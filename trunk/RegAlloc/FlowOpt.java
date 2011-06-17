@@ -28,13 +28,13 @@ public class FlowOpt
 	public static void flowOpt(ArrayList<BasicBlock> instr, Frame.Frame frame){
 		change = true;
 		//		deleteUnReachableCode(instr);
-		subexpressionElimination(instr, frame);		
-		/*while(change){
+			subexpressionElimination(instr, frame);		
+			/*		while(change){
 			//			System.out.println(1);
 			change = false;
 
 			//			System.out.println(2);
-			copyPropgation(instr);
+			//			copyPropgation(instr);
 			//			System.out.println(3);
 			deadCodeElimination(instr);
 			//			System.out.println(4);

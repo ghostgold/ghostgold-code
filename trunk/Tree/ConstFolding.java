@@ -20,6 +20,36 @@ public class ConstFolding
 					return new CONST(((CONST)e.left).value / ((CONST)e.right).value);				
 			}
 		}
+		if(e.binop == BINOP.PLUS){
+			if(e.left instanceof BINOP){
+				BINOP left = (BINOP)e.left;
+				if(left.binop == BINOP.PLUS ){
+					if(left.left instanceof CONST)
+						return new BINOP(BINOP.PLUS, left.left, new BINOP(BINOP.PLUS, left.right, e.right));
+					if(left.right instanceof CONST)
+						return new BINOP(BINOP.PLUS, left.right, new BINOP(BINOP.PLUS, left.left, e.right));
+				}
+				if(left.binop == BINOP.MINUS){
+					if(left.right instanceof CONST)
+						return new BINOP(BINOP.MINUS, new BINOP(BINOP.PLUS, left.left, e.right), left.right);
+				}
+			}
+			else if(e.right instanceof BINOP){
+				BINOP right = (BINOP)e.right;
+				if(right.binop == BINOP.PLUS){
+					if(right.left instanceof CONST)
+						return new BINOP(BINOP.PLUS, new BINOP(BINOP.PLUS, e.left, right.right), right.left);
+					if(right.right instanceof CONST)
+						return new BINOP(BINOP.PLUS, new BINOP(BINOP.PLUS, e.left, right.left), right.right);
+				}
+				if(right.binop == BINOP.MINUS){
+					if(right.left instanceof CONST)
+						return new BINOP(BINOP.PLUS, new BINOP(BINOP.MINUS, e.left, right.right), right.left);
+					if(right.right instanceof CONST)
+						return new BINOP(BINOP.MINUS, new BINOP(BINOP.PLUS, e.left, right.left), right.right);
+				}
+			}
+		}
 		if(e.binop == BINOP.MUL){
 			if(e.left instanceof CONST)
 				if( ((CONST)e.left).value == 0)return new CONST(0);
