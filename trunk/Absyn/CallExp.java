@@ -5,6 +5,9 @@ public class CallExp extends Exp {
    public ExpList args;
    public CallExp(int p, Symbol f, ExpList a) {pos=p; func=f; args=a;}
 	public CallExp clone(){
-		return new CallExp(pos, func, args.clone());
+		if(args != null)
+			return new CallExp(pos, func, args.clone());
+		else 
+			return new CallExp(pos, func, null);
 	}
 }

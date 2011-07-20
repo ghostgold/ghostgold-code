@@ -207,6 +207,30 @@ public class ReNaming
 		}
 		return d;
 	}
+	public FunctionDec renameDecOnlyOne(FunctionDec d){
+		FunctionDec dd = d;
+		dd = d;
+		if(dd.result != null)
+			dd.result = renameTy(dd.result);
+		env.tenv.beginScope();
+		env.venv.beginScope();
+		FieldList params = dd.params;
+		while(params != null){
+			Symbol.Symbol newName = Symbol.Symbol.symbol(params.name.toString() + "_" + count);
+			count++;
+			env.venv.put(params.name, newName);
+			params.name = newName;
+			Symbol.Symbol typ = (Symbol.Symbol)env.tenv.get(params.typ);
+			if(typ != null)
+				params.typ = typ;
+			params = params.tail;
+		}
+		ReNaming rename = new ReNaming(dd);
+		dd.body = rename.renameExp(dd.body);
+		env.tenv.endScope();
+		env.venv.endScope();
+		return d;
+	}
 	
 	public TypeDec renameDec(TypeDec d){
 		TypeDec dd = d;

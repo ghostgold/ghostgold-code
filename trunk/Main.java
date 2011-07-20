@@ -12,7 +12,7 @@ public class Main {
 		boolean printIR = false;
 		boolean printAssem = true;
 		boolean allocTemp = true;
-		boolean absynOpt = false;
+		boolean absynOpt = true;
 		boolean irOpt = false;
 		boolean flowOpt = false ;
 		//=========================================================
@@ -25,9 +25,10 @@ public class Main {
 			if(s.equals("-O")){
 				absynOpt = true;
 				irOpt = true;
-				flowOpt = true;
+				flowOpt = false;
 			}
 		}
+
 
 		if (!filename.endsWith(suffix)){
 			System.out.println("filename should be end with .tig");

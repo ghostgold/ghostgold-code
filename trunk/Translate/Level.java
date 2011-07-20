@@ -55,5 +55,16 @@ public class Level {
 			fp = ans;
 		}
 		return ans;
+		/*
+		Level tLevel = this;
+		Tree.Exp fp = new Tree.TEMP(frame.FP());
+		Tree.Exp ans = fp;
+		while(tLevel != target){
+			ans = tLevel.staticLink().exp(fp);
+			tLevel = tLevel.parent;
+			fp = ans;
+		}
+		return ans;*/
+		
     }
 }

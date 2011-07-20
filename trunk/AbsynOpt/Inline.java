@@ -36,8 +36,13 @@ public class Inline
 		return e;
 	}
 	public static  Exp inlineExp(CallExp call){
-		FunctionDec func = (FunctionDec)funcenv.get(call.func);
-		if(func != null && func.call == false){
+		FunctionDec f = (FunctionDec)funcenv.get(call.func);
+		if(f != null && f.call == false){
+			FunctionDec func = f.clone();
+			/*			ReNaming.env = new Semant.Env();
+			ReNaming rename = new ReNaming(func);
+			func = rename.renameDecOnlyOne(func);*/
+			
 			ExpList args = call.args;
 			FieldList params = func.params;
 			if(args == null && params == null)

@@ -28,27 +28,40 @@ public class FlowOpt
 	public static void flowOpt(ArrayList<BasicBlock> instr, Frame.Frame frame){
 		change = true;
 		//		deleteUnReachableCode(instr);
-			subexpressionElimination(instr, frame);		
-			/*		while(change){
+		//	
+		while(change){
 			//			System.out.println(1);
 			change = false;
 
 			//			System.out.println(2);
 			//			copyPropgation(instr);
+			subexpressionElimination(instr, frame);		
 			//			System.out.println(3);
 			deadCodeElimination(instr);
 			//			System.out.println(4);
-			}*/
+		}
 	}
 	public static void subexpressionElimination(ArrayList<BasicBlock> instr, Frame.Frame frame){
+		// BlockFlowGraph flow = new BlockFlowGraph(instr);
+		// LinkedHashSet<String>  total = new LinkedHashSet();
+		// Map<Node, Set<String>> evalSet = new LinkedHashMap();
+		// Map<Node, Set<String>> availIn = new LinkedHashMap();
+		// Map<Node, Set<String>> availOut = new LinkedHashMap();
+
+		// for(NodeList nodes = flow.nodes(); nodes != null; nodes = nodes.tail){
+		// 	Set<String> acp = subexpressionLocalElimination(flow.instr(nodes.head));
+		// 	evalSet.put(nodes.head, new LinkedHashSet(acp));
+		// 	total.addAll(acp);
+		// }
+
 		BlockFlowGraph flow = new BlockFlowGraph(instr);
-		LinkedHashSet<String>  total = new LinkedHashSet();
-		Map<Node, Set<String>> evalSet = new LinkedHashMap();
-		Map<Node, Set<String>> availIn = new LinkedHashMap();
-		Map<Node, Set<String>> availOut = new LinkedHashMap();
+		LinkedHashSet<InstrListTemp>  total = new LinkedHashSet();
+		Map<Node, Set<InstrListTemp>> evalSet = new LinkedHashMap();
+		Map<Node, Set<InstrListTemp>> availIn = new LinkedHashMap();
+		Map<Node, Set<InstrListTemp>> availOut = new LinkedHashMap();
 
 		for(NodeList nodes = flow.nodes(); nodes != null; nodes = nodes.tail){
-			Set<String> acp = subexpressionLocalElimination(flow.instr(nodes.head));
+			Set<InstrListTemp> acp = subexpressionLocalElimination(flow.instr(nodes.head));
 			evalSet.put(nodes.head, new LinkedHashSet(acp));
 			total.addAll(acp);
 		}
@@ -142,8 +155,104 @@ public class FlowOpt
 		// 		System.out.println();*/
 		// 	subexpressionLocalElimination(flow.instr(node.head), availIn.get(node.head), flow, frame);
 		// }
+
+
+
+		// for(NodeList nodes = flow.nodes(); nodes != null; nodes = nodes.tail){
+		// 	availIn.put(nodes.head, (Set)total.clone());
+		// 	availOut.put(nodes.head, (Set)total.clone());
+		// }
+		// boolean debug = false;
+		// availIn.put(flow.entry, new LinkedHashSet());
+		// boolean flowChange = true;
+		// while(flowChange){
+		// 	flowChange = false;
+		// 	//			System.out.println("11");
+		// 	for(BasicBlock block : instr){
+		// 		//node is what to be done with in and out
+		// 		Node node = flow.getNodeOfInstr(block);
+		// 		NodeList pred = node.pred();
+		// 		/*				if(debug){
+		// 			System.out.println(block.label+ "old in");
+		// 			for(String s: availIn.get(node))
+		// 				System.out.print(s+" ");
+		// 			System.out.println();
+		// 			System.out.println(block.label+ "old out");
+		// 			for(String s: availOut.get(node))
+		// 				System.out.print(s+" ");
+		// 			System.out.println();
+		// 			}*/
+		// 		Set<InstrListTemp> oldIn = availIn.get(node);
+		// 		Set<InstrListTemp> newIn ;
+		// 		if(pred != null){
+		// 			//if(debug)System.out.println("pre " + flow.instr(pred.head).label.toString());
+		// 			newIn = new LinkedHashSet(availOut.get(pred.head));
+		// 			for(NodeList p = pred.tail; p != null; p = p.tail){
+		// 				//if(debug)System.out.println("pre " + flow.instr(p.head).label.toString());
+		// 				newIn.retainAll(availOut.get(p.head));
+		// 			}
+		// 			if(!newIn.equals(oldIn)){
+		// 				flowChange = true;
+		// 				availIn.put(node, newIn);
+		// 			}
+		// 		}
+		// 		else newIn = oldIn;
+
+		// 		LinkedHashSet<InstrListTemp> newOut = new LinkedHashSet(newIn);
+		// 		ArrayList<InstrListTemp> del = new ArrayList();
+		// 		for(InstrList i = block.instrs; i != null; i = i.tail ){
+		// 			for(TempList def = i.head.def(); def != null; def = def.tail){
+		// 				for(InstrListTemp s : newOut){
+		// 					if(s.instr.head.toString().indexOf("("+def.head.toString()+")") >= 0)del.add(s);
+		// 				}
+		// 			}
+		// 			if(i.head.opcode == MEM.SW){
+		// 				for(InstrListTemp s : newOut){
+		// 					String str = s.instr.head.toString();
+		// 					if(str.startsWith("lw") &&
+		// 					   !str.toString().endsWith("nc") && 
+		// 					   aboutStack(str,frame) == ((MEM)i.head).aboutStack())
+		// 						del.add(s);
+		// 				}
+		// 			}	
+		// 			if(i.head instanceof CALL){
+		// 				// for(InstrList s: newOut){
+		// 				// 	if(s.startsWith("lw") && !s.endsWith("nc")){
+		// 				// 		del.add(s);
+		// 				// 	}
+		// 				// }
+		// 				newOut = new LinkedHashSet();
+		// 			}
+		// 		}
+		// 		for(InstrListTemp s : del)
+		// 			newOut.remove(s);
+		
+		// 		newOut.addAll(evalSet.get(node));
+		// 		if(!newOut.equals(availOut.get(node))){
+		// 			availOut.put(node, newOut);
+		// 			flowChange = true;
+		// 		}
+		// 		/*if(debug){
+		// 			System.out.println(block.label+ "new in");
+		// 			for(String s: availIn.get(node))
+		// 				System.out.print(s+" ");
+		// 			System.out.println();
+		// 			System.out.println(block.label+ "new out");
+		// 			for(String s: availOut.get(node))
+		// 				System.out.print(s+" ");
+		// 			System.out.println();
+		// 			}*/
+		// 	}
+		// }
+		// for(NodeList node = flow.nodes(); node != null; node = node.tail){
+		// 	/*			System.out.println(flow.instr(node.head).label.toString());
+		// 	for(String s: availIn.get(node.head))
+		// 		System.out.print(s+" ");
+		// 		System.out.println();*/
+		// 	subexpressionLocalElimination(flow.instr(node.head), availIn.get(node.head));
+		// }
 	}
-	static void replaceCommonExpression(BasicBlock block, String s, Temp replace, BlockFlowGraph flow, Set<BasicBlock> visited )
+	/*static void replaceCommonExpression(BasicBlock block, String s, Temp replace, BlockFlowGraph flow, Set<BasicBlock> visited )
 	{
 		if(visited.contains(block))return;
 		visited.add(block);
@@ -169,8 +278,8 @@ public class FlowOpt
 				replaceCommonExpression(flow.instr(n.head), s, replace, flow, visited);
 			}
 		}
-	}
-	static void subexpressionLocalElimination(BasicBlock block, Set<String> aep, BlockFlowGraph flow, Frame.Frame frame){
+		}*/
+	/*	static void subexpressionLocalElimination(BasicBlock block, Set<String> aep, BlockFlowGraph flow, Frame.Frame frame){
 
 		for(InstrList i = block.instrs; i != null; i = i.tail ){
 			if(i.head instanceof CALL){
@@ -203,14 +312,68 @@ public class FlowOpt
 				aep.remove(s);
 		}
 		block.setInstrs(block.instrs);
-	}
+		}*/
 	static boolean aboutStack(String s, Frame.Frame f){
 		if(s.indexOf(f.FP().toString()) >= 0)return true;
 		if(s.indexOf(f.FFP().toString()) >= 0)return true;
 		if(s.indexOf(f.SP().toString()) >= 0)return true;
 		return false;
 	}
-	public static Set<String> subexpressionLocalElimination(BasicBlock block){
+
+	public static void subexpressionLocalElimination(BasicBlock block, Set<InstrListTemp> avExp){
+		InstrList instr = block.instrs;
+		for(InstrList i = instr; i != null; i = i.tail){
+			String assem = i.head.toString();
+			if(!assem.equals("---")){
+				OPER exp = (OPER)i.head;
+				InstrListTemp it = null;
+				for(InstrListTemp x : avExp)
+					if(x.instr.head.toString().equals(assem)){
+						it = x;
+						break;
+					}
+				if(it != null){
+					change = true;
+					//					System.out.println(exp.dst.toString());
+					if (it.temp != null){
+						i.head = new MOVE("move `d0 `s0", exp.dst, it.temp);
+					}
+					else{
+						OPER preexp = (OPER)it.instr.head;
+						it.temp = new Temp();
+						Temp predst = preexp.dst;
+						preexp.setDst(it.temp);
+						it.instr.tail = new InstrList(new MOVE("move `d0 `s0",predst, it.temp), it.instr.tail);
+						i.head = new MOVE("move `d0 `s0", exp.dst, it.temp);
+					}
+				}
+			}
+			ArrayList<InstrListTemp> del = new ArrayList();
+			if(i.head instanceof CALL){
+				avExp = new LinkedHashSet();
+
+			}
+			else{
+				for(TempList def = i.head.def(); def != null; def = def.tail){
+					for(InstrListTemp s :avExp){
+						if(s.instr.head.toString().indexOf("("+def.head.toString()+")") >= 0)
+							del.add(s);
+					}
+				}
+				if(i.head.opcode == MEM.SW){
+					for(InstrListTemp s: avExp){
+						if(s.instr.head.killedBySwOrCall(i.head))
+							del.add(s);
+					}
+				}
+				for(InstrListTemp d : del)
+					avExp.remove(d);
+			}
+		}
+		block.setInstrs(instr);
+	}
+	
+	public static Set<InstrListTemp> subexpressionLocalElimination(BasicBlock block){
 		InstrList instr = block.instrs;
 		Map<String, InstrListTemp> avExp = new LinkedHashMap();
 		for(InstrList i = instr; i != null; i = i.tail){
@@ -220,7 +383,7 @@ public class FlowOpt
 				InstrListTemp it = avExp.get(assem);
 				if(it != null){
 					change = true;
-					//					System.out.println(exp.dst.toString());
+					//                                      System.out.println(exp.dst.toString());
 					if (it.temp != null){
 						i.head = new MOVE("move `d0 `s0", exp.dst, it.temp);
 					}
@@ -256,8 +419,12 @@ public class FlowOpt
 			}
 		}
 		block.setInstrs(instr);
-		return avExp.keySet();
+		Set<InstrListTemp> eval = new LinkedHashSet();
+		for(Map.Entry<String, InstrListTemp> av :avExp.entrySet())
+			eval.add(av.getValue());
+		return eval;
 	}
+
 	public static void deadCodeElimination(ArrayList<BasicBlock> instrs){
 		BlockFlowGraph flow = new BlockFlowGraph(instrs);
 		BlockLiveness liveness = new BlockLiveness(flow);
