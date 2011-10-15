@@ -2,6 +2,7 @@ package nachos.threads;
 
 import nachos.machine.*;
 
+import java.util.PriorityQueue;
 /**
  * Uses the hardware timer to provide preemption, and to allow threads to sleep
  * until a certain time.
@@ -22,6 +23,7 @@ public class Alarm {
 		});
 	}
 
+	static PriorityQueue<KThreadWithTime> sleepers = new PriorityQueue<KThreadWithTime>();
 	/**
 	 * The timer interrupt handler. This is called by the machine's timer
 	 * periodically (approximately every 500 clock ticks). Causes the current
@@ -29,6 +31,12 @@ public class Alarm {
 	 * should be run.
 	 */
 	public void timerInterrupt() {
+		while (true) {
+			KThreadWithTime t = sleepers.peek();
+			if (t.time <= Machine.timer().getTime())
+				t.thread.ready();
+			else break;
+		}
 		KThread.yield();
 	}
 
@@ -46,9 +54,25 @@ public class Alarm {
 	 * @see nachos.machine.Timer#getTime()
 	 */
 	public void waitUntil(long x) {
-		// for now, cheat just to get something working (busy waiting is bad)
 		long wakeTime = Machine.timer().getTime() + x;
-		while (wakeTime > Machine.timer().getTime())
-			KThread.yield();
+		sleepers.add(new KThreadWithTime(KThread.currentThread(), wakeTime));
+		if (wakeTime > Machine.timer().getTime())
+			KThread.sleep();
+	}
+	
+	class KThreadWithTime implements Comparable<KThreadWithTime>{
+		KThread thread;
+		long time;
+		public KThreadWithTime(KThread thread, long time) {
+			this.thread = thread;
+			this.time = time;
+		}
+		public int compareTo(KThreadWithTime twt) {
+			if (this.time < twt.time)
+				return -1;
+			if (this.time == twt.time)
+				return 0;
+			return 1;
+		}
 	}
 }
