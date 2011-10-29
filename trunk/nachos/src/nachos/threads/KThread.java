@@ -204,11 +204,11 @@ public class KThread {
 		toBeDestroyed = currentThread;
 
 		currentThread.status = statusFinished;
-		
+
 		for (KThread wakee = currentThread.waiter.nextThread(); wakee != null;) {
 			wakee.ready();
 		}
-		
+
 		sleep();
 	}
 
@@ -294,8 +294,9 @@ public class KThread {
 		boolean intStatus = Machine.interrupt().disable();
 		
 		if(statusFinished != this.status){
-			waiter.waitForAccess(currentThread);
-			KThread.sleep();
+            waiter.waitForAccess(currentThread);
+            KThread.sleep();
+
 		}
 		Machine.interrupt().restore(intStatus);
 	}
@@ -426,10 +427,12 @@ public class KThread {
 	 */
 	public static void selfTest() {
 		Lib.debug(dbgThread, "Enter KThread.selfTest");
-		KThread pre = new KThread(new PingTest(2)).setName("first finish");
-		pre.fork();
-		KThread.yield();
-		pre.join();
+		//KThread pre = new KThread(new PingTest(2)).setName("first finish");
+		//pre.fork();
+		Alarm alarm = new Alarm();
+		alarm.waitUntil(20000);
+		//KThread.yield();
+		//pre.join();
 		//new KThread(new PingTest(1)).setName("forked thread").fork();
 		new PingTest(0).run();
 	}
@@ -459,6 +462,7 @@ public class KThread {
 	private Runnable target;
 	private TCB tcb;
 	private ThreadQueue waiter =  ThreadedKernel.scheduler.newThreadQueue(true);
+
 	/**
 	 * Unique identifer for this thread. Used to deterministically compare
 	 * threads.

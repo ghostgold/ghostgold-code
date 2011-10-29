@@ -31,12 +31,19 @@ public class Alarm {
 	 * should be run.
 	 */
 	public void timerInterrupt() {
+		boolean intStatus = Machine.interrupt().disable();
+		
 		while (true) {
 			KThreadWithTime t = sleepers.peek();
-			if (t.time <= Machine.timer().getTime())
+			if (t != null && t.time <= Machine.timer().getTime()) {
 				t.thread.ready();
+				sleepers.poll();
+			}
 			else break;
 		}
+		
+		Machine.interrupt().restore(intStatus);
+		
 		KThread.yield();
 	}
 
@@ -54,10 +61,14 @@ public class Alarm {
 	 * @see nachos.machine.Timer#getTime()
 	 */
 	public void waitUntil(long x) {
+		boolean intStatus = Machine.interrupt().disable();
+		
 		long wakeTime = Machine.timer().getTime() + x;
 		sleepers.add(new KThreadWithTime(KThread.currentThread(), wakeTime));
 		if (wakeTime > Machine.timer().getTime())
 			KThread.sleep();
+		
+		Machine.interrupt().restore(intStatus);
 	}
 	
 	class KThreadWithTime implements Comparable<KThreadWithTime>{
