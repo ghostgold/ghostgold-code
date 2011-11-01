@@ -205,7 +205,7 @@ public class KThread {
 
 		currentThread.status = statusFinished;
 
-		for (KThread wakee = currentThread.waiter.nextThread(); wakee != null;) {
+		for (KThread wakee = currentThread.waiter.nextThread(); wakee != null; wakee = currentThread.waiter.nextThread()) {
 			wakee.ready();
 		}
 
