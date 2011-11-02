@@ -294,6 +294,7 @@ public class KThread {
 		boolean intStatus = Machine.interrupt().disable();
 		
 		if(statusFinished != this.status){
+			waiter.acquire(this);
             waiter.waitForAccess(currentThread);
             KThread.sleep();
 
