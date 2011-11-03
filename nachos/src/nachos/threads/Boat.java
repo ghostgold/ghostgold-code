@@ -4,7 +4,18 @@ import nachos.ag.BoatGrader;
 
 public class Boat {
 	static BoatGrader bg;
-
+	static Lock lock;
+	static Condition adultOnOahu;
+	static Condition childOnMolokai;
+	static Condition waitingBoat;
+	static Condition waitingPassenger;
+	
+	static int peopleOnOahu;
+	static int peopleOnBoat;
+	static int adultNum;
+	
+	static boolean boatOnOahu;
+	
 	public static void selfTest() {
 		BoatGrader b = new BoatGrader();
 
@@ -28,14 +39,42 @@ public class Boat {
 		// Create threads here. See section 3.4 of the Nachos for Java
 		// Walkthrough linked from the projects page.
 
-		Runnable r = new Runnable() {
+		lock = new Lock();
+		adultOnOahu = new Condition(lock);
+		childOnMolokai = new Condition(lock);
+		waitingBoat = new Condition(lock);
+		waitingPassenger = new Condition(lock);
+		
+		peopleOnOahu = adults + children;
+		peopleOnBoat = 0;
+		adultNum = 0;
+		
+		boatOnOahu = true;
+		
+		Runnable child = new Runnable() {
 			public void run() {
-				SampleItinerary();
+				ChildItinerary();
 			}
 		};
-		KThread t = new KThread(r);
-		t.setName("Sample Boat Thread");
-		t.fork();
+		Runnable adult = new Runnable() {
+			public void run() {
+				AdultItinerary();
+			}
+			
+		};
+		for(int i = 0; i < adults; i++) {
+			KThread t = new KThread(adult);
+			t.fork();
+		}
+		for(int i = 0; i < children; i++) {
+			KThread t = new KThread(child);
+			t.fork();
+		}
+		while(peopleOnOahu != 0)
+			KThread.yield();
+//		KThread t = new KThread(r);
+//		t.setName("Sample Boat Thread");
+//		t.fork();
 
 	}
 
@@ -46,9 +85,67 @@ public class Boat {
 		 * bg.AdultRowToMolokai(); indicates that an adult has rowed the boat
 		 * across to Molokai
 		 */
+		lock.acquire();
+		while (adultNum == 0)
+			adultOnOahu.sleep();
+		
+		adultNum--;
+		
+		while (peopleOnBoat > 0 || !boatOnOahu) {
+			waitingBoat.sleep();
+		}
+		
+		peopleOnBoat = 2;
+		peopleOnOahu--;
+		boatOnOahu = false;
+		peopleOnBoat = 0;		
+		bg.AdultRowToMolokai();
+		childOnMolokai.wake();
+		lock.release();
 	}
 
 	static void ChildItinerary() {
+		lock.acquire();
+		while (true) {
+			while (peopleOnBoat > 1 || !boatOnOahu) {
+				waitingBoat.sleep();
+			}
+			
+			if (peopleOnBoat == 0) {
+				peopleOnBoat++;
+				peopleOnOahu--;
+				waitingBoat.wakeAll();
+				waitingPassenger.sleep();
+				boatOnOahu = true;
+				peopleOnBoat--;
+				bg.ChildRowToOahu();
+				waitingBoat.wake();
+				waitingBoat.sleep();
+			}
+
+			else {
+				peopleOnBoat++;
+				if (adultNum++ == 0)
+					adultOnOahu.wake();
+				peopleOnOahu--;
+				if (peopleOnOahu > 0)
+					waitingPassenger.wake();
+				boatOnOahu = false;
+				peopleOnBoat--;
+				bg.ChildRowToMolokai();
+				bg.ChildRideToMolokai();
+				childOnMolokai.sleep();
+				while (peopleOnBoat > 0 || boatOnOahu) {
+					childOnMolokai.sleep();
+				}
+				peopleOnBoat++;
+				bg.ChildRowToOahu();
+				boatOnOahu = true;
+				peopleOnBoat--;
+				waitingBoat.wake();
+				waitingBoat.sleep();
+			}
+		}
 	}
 
 	static void SampleItinerary() {
