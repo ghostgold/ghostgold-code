@@ -34,7 +34,7 @@ public class Communicator {
 		waitE = 0;
 		accS = 0;
 		accL = 0;
-		empty = 1;
+		empty = 0;
 	}
 
 	/**
@@ -55,12 +55,11 @@ public class Communicator {
 			waitS++;
 			waitingSpeaker.sleep();
 		}
-		while (empty == 0) {
+		waitL--;				
+		if (empty++ > 0) {
 			waitingClean.sleep();
 		}
-		empty--;
 		message = word;
-		waitL--;		
 		waitingListener.wake();
 		lock.release();
 	}
@@ -80,8 +79,11 @@ public class Communicator {
 		waitL++;        
 		waitingListener.sleep();
 		int save = message;
-		empty++;
-		waitingClean.wake();
+
+		if (empty > 0) {
+			waitingClean.wake();
+			empty--;
+		}
 		lock.release();
 		return save;
 
