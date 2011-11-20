@@ -26,8 +26,10 @@ public class UserProcess {
 		pageTable = new TranslationEntry[numPhysPages];
 		for (int i = 0; i < numPhysPages; i++)
 			pageTable[i] = new TranslationEntry(i, i, true, false, false, false);
+		
+		fileTable[0] = UserKernel.console.openForReading();
+		fileTable[1] = UserKernel.console.openForWriting();
 	}
-
 	/**
 	 * Allocate and return a new process of the correct class. The class name is
 	 * specified by the <tt>nachos.conf</tt> key
@@ -438,8 +440,122 @@ public class UserProcess {
 	public int handleSyscall(int syscall, int a0, int a1, int a2, int a3) {
 		switch (syscall) {
 		case syscallHalt:
-			return handleHalt();
+			if (pid == 0) // is root process 
+				return handleHalt();
+			else 
+				return -1;
+			
+		case syscallExit:
+			if (pid == 0)
+				return handleHalt();
+			else {
+				//TODO;
+			}
+		case syscallCreate:
+			try {
+				String filename = this.readVirtualMemoryString(a0, maxFilenameLength);
+				if (filename == null) 
+					return -1; 
 
+				OpenFile file = UserKernel.fileSystem.open(filename, true);
+				if (file == null)
+					return -1;
+				
+				int fileDescriptor = this.getNewFileDescriptor();
+				if (fileDescriptor == -1)
+					return -1; 
+				
+				fileTable[fileDescriptor] = file;
+				return fileDescriptor;
+				
+			} catch (Exception e) {
+				Lib.debug('S', e.toString());
+				return -1;
+			}
+			
+		case syscallOpen:
+			try {
+				String filename = this.readVirtualMemoryString(a0, maxFilenameLength);
+				if (filename == null) 
+					return -1; 
+
+				OpenFile file = UserKernel.fileSystem.open(filename, false);
+				if (file == null)
+					return -1;
+				
+				int fileDescriptor = this.getNewFileDescriptor();
+				if (fileDescriptor == -1)
+					return -1; 
+				
+				fileTable[fileDescriptor] = file;
+				return fileDescriptor;
+				
+			} catch (Exception e) {
+				Lib.debug('S', e.toString());
+				return -1;
+			}
+						
+		case syscallRead:
+			try {
+				OpenFile file = fileTable[a0];
+				if (file == null)
+					return -1;
+				
+				byte[] buf = new byte[a2+1];
+				int count = file.read(buf, 0, a2);
+				if (count == -1)
+					return -1;
+				
+				this.writeVirtualMemory(a1, buf, 0, count);
+				return count;
+					
+			} catch (Exception e) {
+				Lib.debug('S', e.toString());
+				return -1;
+			}
+		case syscallWrite:
+			try {
+				OpenFile file = fileTable[a0];
+				if (file == null)
+					return -1;
+				
+				byte[] buf = new byte[a2+1];
+				int count = this.readVirtualMemory(a1, buf, 0, a2);
+				if (count == -1)
+					return -1;
+				
+				file.write(buf, 0, count);
+				return count;
+					
+			} catch (Exception e) {
+				Lib.debug('S', e.toString());
+				return -1;
+			}
+		
+		case syscallClose:
+			try {
+				OpenFile file = fileTable[a0];
+				if (file == null)
+					return -1;
+				
+				file.close();
+				fileTable[a0] = null;
+			} catch (Exception e) {
+				Lib.debug('S', e.toString());
+				return -1;
+			}
+			
+		case syscallUnlink:
+			try {
+				String filename = this.readVirtualMemoryString(a0, maxFilenameLength);
+				if (UserKernel.fileSystem.remove(filename))
+					return 0;
+				return -1;
+			} catch (Exception e) {
+				Lib.debug('S', e.toString());
+				return -1;
+			}
+			
 		default:
 			Lib.debug(dbgProcess, "Unknown syscall " + syscall);
 			Lib.assertNotReached("Unknown system call!");
@@ -476,6 +592,15 @@ public class UserProcess {
 		}
 	}
 
+	
+	private int getNewFileDescriptor() {
+		for (int i = 0; i < maxFileOpened; i++) {
+			if (fileTable[i] == null) {
+				return i;
+			}
+		}
+		return -1;
+	}
 	/** The program being run by this process. */
 	protected Coff coff;
 
@@ -486,10 +611,20 @@ public class UserProcess {
 
 	/** The number of pages in the program's stack. */
 	protected final int stackPages = 8;
+	
+	protected final int maxFilenameLength = 256;
+	protected final int maxFileOpened = 32;
+	/** File descriptor table*/
+	protected OpenFile[] fileTable = new OpenFile[maxFileOpened];
 
 	private int initialPC, initialSP;
 	private int argc, argv;
+	private int pid = numCreated++;
+	
+	private static int numCreated = 0;
 
 	private static final int pageSize = Processor.pageSize;
 	private static final char dbgProcess = 'a';
+	
+	
 }
