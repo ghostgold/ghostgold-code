@@ -28,8 +28,61 @@ public class UserKernel extends ThreadedKernel {
 				exceptionHandler();
 			}
 		});
+		
+		memoryFreeLock = new Lock();
+		memoryFreeLock.acquire();
+		for (int i = 0; i < memoryFreeMap.length; i++) 
+			memoryFreeMap[i] = 0;
+		memoryFreeLock.release();
 	}
 
+	
+	/**
+	 * Allocate memory for a new process
+	 */
+	public static int[] allocPages(int num) {
+		int[] result = new int[num];
+		int total = 0;
+		try {
+			memoryFreeLock.acquire();
+			for (int i = 0; i < memoryFreeMap.length; i++){
+				if (memoryFreeMap[i] == 0){ 
+					result[total++] = i;
+					if (total == num)
+						break;
+				}
+			}
+			if (total == num)
+				for (int i = 0; i < num; i++) 
+					memoryFreeMap[result[i]]++; 
+			memoryFreeLock.release();
+		} catch (Exception e){
+			memoryFreeLock.release();
+		}
+		if (total == num) 
+			return result;
+		else 
+			return null;
+	}
+	
+	/**
+	 * Release pages
+	 * @param pagesUsed
+	 * 	the page to be released 
+	 * 
+	 */
+	public static int releasePages(int[] pagesUsed) {
+		try {
+			memoryFreeLock.acquire();
+			for (int i = 0; i < pagesUsed.length; i++) 
+				memoryFreeMap[pagesUsed[i]]--;
+			memoryFreeLock.release();
+		} catch (Exception e) {
+			memoryFreeLock.release();
+			return -1;
+		}
+		return 0;
+	}
 	/**
 	 * Test the console device.
 	 */
@@ -109,5 +162,8 @@ public class UserKernel extends ThreadedKernel {
 
 	/** Globally accessible reference to the synchronized console. */
 	public static SynchConsole console;
+	
+	private static int[] memoryFreeMap = new int[Machine.processor().getNumPhysPages()];
+	private static Lock memoryFreeLock ;
 
 }
