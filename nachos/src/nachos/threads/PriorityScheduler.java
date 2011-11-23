@@ -59,9 +59,9 @@ public class PriorityScheduler extends Scheduler {
 	public void setPriority(KThread thread, int priority) {
 		Lib.assertTrue(Machine.interrupt().disabled());
 
-		Lib.assertTrue(priority >= priorityMinimum
-				&& priority <= priorityMaximum);
-
+		Lib.assertTrue(priority >= getPriorityMinimum()
+				&& priority <= getPriorityMaximum());
+		
 		getThreadState(thread).setPriority(priority);
 	}
 
@@ -71,7 +71,7 @@ public class PriorityScheduler extends Scheduler {
 		KThread thread = KThread.currentThread();
 
 		int priority = getPriority(thread);
-		if (priority == priorityMaximum)
+		if (priority == getPriorityMaximum())
 			return false;
 
 		setPriority(thread, priority + 1);
@@ -86,7 +86,7 @@ public class PriorityScheduler extends Scheduler {
 		KThread thread = KThread.currentThread();
 
 		int priority = getPriority(thread);
-		if (priority == priorityMinimum)
+		if (priority == getPriorityMinimum())
 			return false;
 
 		setPriority(thread, priority - 1);
@@ -116,7 +116,13 @@ public class PriorityScheduler extends Scheduler {
 	 * @return the scheduling state of the specified thread.
 	 */
 
+	public int getPriorityMaximum() {
+		return priorityMaximum;
+	}
 	
+	public int getPriorityMinimum() {
+		return priorityMinimum;
+	}
 	protected ThreadState getThreadState(KThread thread) {
 		if (thread.schedulingState == null)
 			thread.schedulingState = new ThreadState(thread);
