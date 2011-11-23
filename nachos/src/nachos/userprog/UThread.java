@@ -21,6 +21,7 @@ public class UThread extends KThread {
 		});
 
 		this.process = process;
+		process.thread = this;
 	}
 
 	private void runProgram() {
