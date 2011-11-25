@@ -54,9 +54,9 @@ public class UserProcess {
 	public boolean execute(String name, String[] args) {
 		if (!load(name, args))
 			return false;
-
-		new UThread(this).setName(name).fork();
+		
 		numRunning++;
+		new UThread(this).setName(name).fork();
 		return true;
 	}
 
@@ -429,7 +429,6 @@ public class UserProcess {
 
 	private void handleExit() {
 		try {
-			numRunning--;
 			int[] pageUsed = new int[pageTable.length];
 			for (int i = 0; i < pageUsed.length; i++) 
 				pageUsed[i] = pageTable[i].ppn;
@@ -437,11 +436,11 @@ public class UserProcess {
 			for (int i = 0; i < maxFileOpened; i++) 
 				if (fileTable[i] != null)
 					fileTable[i].close();
-			UThread.finish();
+			numRunning--;			
 			if (numRunning == 0) {
 				Kernel.kernel.terminate();
-			}
-
+			}			
+			UThread.finish();
 		} catch (Exception e) {
 			return;
 		}
@@ -527,13 +526,9 @@ public class UserProcess {
 				return -1;
 			
 		case syscallExit:
-			if (pid == 1)
-				return handleHalt();
-			else {
-				this.exitCause = 1;
-				this.exitValue = a0;
-				handleExit();
-			}
+			this.exitCause = 1;
+			this.exitValue = a0;
+			handleExit();
 			break;
 			
 		case syscallExec:
@@ -545,7 +540,6 @@ public class UserProcess {
 				this.readVirtualMemory(a2, argv);
 				for (int i = 0; i < a1; i++) {
 					args[i] = this.readVirtualMemoryString(Lib.bytesToInt(argv, i*4, 4), maxStringArgumentLength);
-					System.out.println(args[i]);
 				}
 				
 				if (!child.execute(filename, args))
