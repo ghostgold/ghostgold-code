@@ -629,8 +629,7 @@ public class UserProcess {
 				if (count == -1)
 					return -1;
 				
-				this.writeVirtualMemory(a1, buf, 0, count);
-				return count;
+				return this.writeVirtualMemory(a1, buf, 0, count);
 					
 			} catch (Exception e) {
 				Lib.debug('S', e.toString());
