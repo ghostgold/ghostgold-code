@@ -563,8 +563,8 @@ public class UserProcess {
 				if (childToJoin == null) 
 					return -1;
 				children.remove(childToJoin);
-				if (childToJoin.exitCause != -2){
-					return childToJoin.exitCause;
+				if (childToJoin.exitCause == -2){
+					childToJoin.thread.join();
 				}
 
 				childToJoin.thread.join();
@@ -679,8 +679,11 @@ public class UserProcess {
 			}
 			
 		default:
-			Lib.debug(dbgProcess, "Unknown syscall " + syscall);
-			Lib.assertNotReached("Unknown system call!");
+			this.exitCause = 0;
+			this.exitValue = -1;
+			handleExit();			
+//			Lib.debug(dbgProcess, "Unknown syscall " + syscall);
+//			Lib.assertNotReached("Unknown system call!");
 		}
 		return 0;
 	}
