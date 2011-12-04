@@ -318,15 +318,11 @@ public class UserProcess {
 		// and finally reserve 1 page for arguments
 		numPages++;
 
-		pageTable = new TranslationEntry[numPages];
-		int[] physicalPages = UserKernel.allocPages(numPages);
-		if(physicalPages == null)
+
+		if (!loadSections()) {
+			coff.close();
 			return false;
-		if (!fillPageTable(physicalPages))
-			return false;
-		
-		if (!loadSections())
-			return false;
+		}
 
 		// store arguments in last page
 		int entryOffset = (numPages - 1) * pageSize;
@@ -366,7 +362,15 @@ public class UserProcess {
 			Lib.debug(dbgProcess, "\tinsufficient physical memory");
 			return false;
 		}
-
+		
+		pageTable = new TranslationEntry[numPages];
+		int[] physicalPages = UserKernel.allocPages(numPages);
+		if(physicalPages == null) {
+			return false;
+		}
+		if (!fillPageTable(physicalPages)) {
+			return false;
+		}
 		// load sections
 		for (int s = 0; s < coff.getNumSections(); s++) {
 			CoffSection section = coff.getSection(s);
@@ -391,6 +395,14 @@ public class UserProcess {
 	 * Release any resources allocated by <tt>loadSections()</tt>.
 	 */
 	protected void unloadSections() {
+		int[] pageUsed = new int[pageTable.length];
+		for (int i = 0; i < pageUsed.length; i++) 
+			pageUsed[i] = pageTable[i].ppn;
+		UserKernel.releasePages(pageUsed);
+		for (int i = 0; i < maxFileOpened; i++) 
+			if (fileTable[i] != null)
+				fileTable[i].close();
+		coff.close();
 	}
 
 	/**
@@ -419,7 +431,7 @@ public class UserProcess {
 	/**
 	 * Handle the halt() system call.
 	 */
-	private int handleHalt() {
+	protected int handleHalt() {
 
 		Machine.halt();
 
@@ -427,15 +439,9 @@ public class UserProcess {
 		return 0;
 	}
 
-	private void handleExit() {
+	void handleExit() {
 		try {
-			int[] pageUsed = new int[pageTable.length];
-			for (int i = 0; i < pageUsed.length; i++) 
-				pageUsed[i] = pageTable[i].ppn;
-			UserKernel.releasePages(pageUsed);
-			for (int i = 0; i < maxFileOpened; i++) 
-				if (fileTable[i] != null)
-					fileTable[i].close();
+			unloadSections();
 			numRunning--;			
 			if (numRunning == 0) {
 				Kernel.kernel.terminate();
@@ -731,16 +737,20 @@ public class UserProcess {
 		}
 		return -1;
 	}
+	
+	public int getPid() {
+		return pid;
+	}
 	/** The program being run by this process. */
 	protected Coff coff;
 
 	/** This process's page table. */
-	protected TranslationEntry[] pageTable;
+	private TranslationEntry[] pageTable;
 	/** The number of contiguous pages occupied by the program. */
 	protected int numPages;
 
 	/** The number of pages in the program's stack. */
-	protected final int stackPages = 8;
+	protected final int stackPages = Config.getInteger("Processor.numStackPages", 8);
 	
 	private static final int maxFilenameLength = 256;
 	private static final int maxStringArgumentLength = 256;
@@ -750,7 +760,7 @@ public class UserProcess {
 
 	private int initialPC, initialSP;
 	private int argc, argv;
-	private int pid = numCreated++;
+	protected int pid = numCreated++;
 
 	private ArrayList<UserProcess> children = new ArrayList<UserProcess>();
 	UThread thread;
