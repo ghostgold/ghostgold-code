@@ -1,5 +1,11 @@
 package nachos.vm;
 
+import java.util.HashMap;
+import java.util.LinkedList;
+
+import nachos.machine.Kernel;
+import nachos.machine.Lib;
+import nachos.threads.Lock;
 import nachos.userprog.UserKernel;
 
 /**
@@ -18,6 +24,15 @@ public class VMKernel extends UserKernel {
 	 */
 	public void initialize(String[] args) {
 		super.initialize(args);
+		VMProcess.swapTableLock = new Lock();
+		VMProcess.pageTableLock = new Lock();
+		VMProcess.tlbLock = new Lock();
+		VMProcess.emptySwapPage = new LinkedList<Integer>();
+		VMProcess.globalPageTable = new InvertedPageTable();
+		VMProcess.swapTable = new HashMap<VirtualPagePair, Integer>();
+		VMProcess.swapFile = VMKernel.fileSystem.open(VMProcess.swapFileName, true);
+		Lib.assertTrue(VMProcess.swapFile != null, "Virtual Memory Initialization Failed");
+		VMProcess.totalSwapPage = 0;
 	}
 
 	/**
@@ -38,6 +53,7 @@ public class VMKernel extends UserKernel {
 	 * Terminate this kernel. Never returns.
 	 */
 	public void terminate() {
+		VMKernel.fileSystem.remove(VMProcess.swapFileName);
 		super.terminate();
 	}
 
