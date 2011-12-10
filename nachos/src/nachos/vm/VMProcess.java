@@ -433,5 +433,5 @@ public class VMProcess extends UserProcess {
 	
 	static LinkedList<Integer> emptySwapPage;
 	static int totalSwapPage;
-	static String swapFileName = "swap";
+	static String swapFileName = "SWAP";
 }
