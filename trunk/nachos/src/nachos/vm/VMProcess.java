@@ -77,7 +77,7 @@ class InvertedPageTable {
 	
 	public VirtualPagePair getPageToBeSwapped() {
 		dump();
-		for (int i = 0; i < Machine.processor().getTLBSize(); i++) {
+		for (int i = 0; i < VMProcess.tlbSize; i++) {
 			TranslationEntry tlbEntry = Machine.processor().readTLBEntry(i);
 			if (tlbEntry.valid) {
 				insert(new VirtualPagePair(tlbEntry.vpn,VMKernel.currentProcess().getPid()), tlbEntry);
@@ -120,8 +120,8 @@ public class VMProcess extends UserProcess {
 	 */
 	public VMProcess() {
 		super();
-		tlb = new TranslationEntry[Machine.processor().getTLBSize()];
-		for (int i = 0; i < Machine.processor().getTLBSize(); i++) {
+		tlb = new TranslationEntry[tlbSize];
+		for (int i = 0; i < tlbSize; i++) {
 			tlb[i] = new TranslationEntry();
 		}
 	}
@@ -132,7 +132,7 @@ public class VMProcess extends UserProcess {
 	 */
 	public void saveState() {
 		super.saveState();
-		for (int i = 0; i < Machine.processor().getTLBSize(); i++) {
+		for (int i = 0; i < tlbSize; i++) {
 			TranslationEntry tlbEntry = Machine.processor().readTLBEntry(i);
 			tlb[i] = new TranslationEntry(tlbEntry);
 			if (tlbEntry.valid) {
@@ -147,7 +147,7 @@ public class VMProcess extends UserProcess {
 	 * <tt>UThread.restoreState()</tt>.
 	 */
 	public void restoreState() {
-		for (int i = 0; i < Machine.processor().getTLBSize(); i++) {
+		for (int i = 0; i < tlbSize; i++) {
 			if (tlb[i].valid && globalPageTable.getPhyPage(new VirtualPagePair(tlb[i].vpn, pid)) != null) {
 				Machine.processor().writeTLBEntry(i, globalPageTable.getPhyPage(new VirtualPagePair(tlb[i].vpn, pid)));
 			}
@@ -157,11 +157,11 @@ public class VMProcess extends UserProcess {
 	}
 
 	private int getFreeTLB() {
-		for (int i = 0; i < Machine.processor().getTLBSize(); i++) {
+		for (int i = 0; i < tlbSize; i++) {
 			if (Machine.processor().readTLBEntry(i).valid == false)
 				return i;
 		}
-		return Lib.random(Machine.processor().getTLBSize());
+		return Lib.random(tlbSize);
 	}
 	
 	private void updateTLB(int i, TranslationEntry t) {
@@ -221,7 +221,7 @@ public class VMProcess extends UserProcess {
 			translation.used = true;
 			translation.dirty = true;
 			if (VMKernel.currentProcess().getPid() == pid) {
-				for (int i = 0; i < Machine.processor().getTLBSize(); i++) {
+				for (int i = 0; i < tlbSize; i++) {
 					if (Machine.processor().readTLBEntry(i).ppn == translation.ppn) {
 						Machine.processor().writeTLBEntry(i, new TranslationEntry());
 					}
@@ -260,7 +260,7 @@ public class VMProcess extends UserProcess {
 	@Override
 	protected void unloadSections() {
 		pageTableLock.acquire();
-		swapTableLock.acquire();
+		//swapTableLock.acquire();
 		for (int i = 0; i < numPages; i++) {
 			VirtualPagePair query = new VirtualPagePair(i, pid);
 			TranslationEntry translation = globalPageTable.getPhyPage(query);
@@ -272,10 +272,10 @@ public class VMProcess extends UserProcess {
 				swapTable.remove(query);
 			}
 		}	
-		for (int i = 0; i < Machine.processor().getTLBSize(); i++) {
+		for (int i = 0; i < tlbSize; i++) {
 			Machine.processor().writeTLBEntry(i, new TranslationEntry());
 		}
-		swapTableLock.release();
+		//swapTableLock.release();
 		pageTableLock.release();
 		for (int i = 0; i < maxFileOpened; i++) 
 			if (fileTable[i] != null)
@@ -296,6 +296,7 @@ public class VMProcess extends UserProcess {
 		VirtualPagePair query = new VirtualPagePair(pageNum, pid); 
 		TranslationEntry result = globalPageTable.getPhyPage(query);
 		if (result == null){
+			numberOfPageFault++;
 			swapTableLock.acquire();			
 			int ppn = getFreePage();
 			result = new TranslationEntry(pageNum, ppn, true, false, false, false);
@@ -322,7 +323,7 @@ public class VMProcess extends UserProcess {
 			return ppn;
 		VirtualPagePair vpp = globalPageTable.getPageToBeSwapped();
 		TranslationEntry translation = globalPageTable.getPhyPage(vpp);
-		for (int i = 0; i < Machine.processor().getTLBSize(); i++) {
+		for (int i = 0; i < tlbSize; i++) {
 			if (Machine.processor().readTLBEntry(i).valid && Machine.processor().readTLBEntry(i).ppn == translation.ppn) {
 				Machine.processor().writeTLBEntry(i, new TranslationEntry());
 			}
@@ -418,12 +419,14 @@ public class VMProcess extends UserProcess {
 	}
 
 	private static final int pageSize = Processor.pageSize;
+	static int tlbSize;
 	private static final char dbgProcess = 'a';
 	static final char dbgVM = 'v';
 	private TranslationEntry[] tlb;
 	static Lock pageTableLock;
+	public static int numberOfPageFault = 0;
 	static Lock swapTableLock;
-	static Lock tlbLock;
+	//static Lock tlbLock;
 	static InvertedPageTable globalPageTable;
 	static Map<VirtualPagePair, Integer> swapTable;
 	static OpenFile swapFile;
