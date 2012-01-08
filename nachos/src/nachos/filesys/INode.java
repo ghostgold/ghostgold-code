@@ -316,50 +316,53 @@ public class INode {
 		FilesysKernel.disk.writeSector(address, result, 0);
 	}
 	
-	void allocSingleIndirect(int address, int from, int amount) {
+	int allocSingleIndirect(int address, int pos, int amount) {
 		int[] singleDirect;
-		if (from > 0) {
+		if (pos + amount > Disk.SectorSize / 4) {
+			amount = Disk.SectorSize / 4 - pos;
+		}
+		if (pos > 0) {
 			singleDirect = loadPointers(singleIndirect);
 		}
 		else {
 			singleDirect = new int[Disk.SectorSize / 4];
 		}
-		for (int i = from; i < from + amount; i++) {
+		for (int i = pos; i < pos + amount; i++) {
 			singleDirect[i] = FilesysKernel.realFileSystem.getFreeList().allocate();
 		}
 		savePointers(address, singleDirect);
+		return amount;
 	}
 	
-	void allocDoubleIndirect(int address, int from, int amount) {
+	int allocDoubleIndirect(int address, int pos, int amount) {
 		int[] doubleDirect;
-		if (from > 0) {
+		if (pos > 0) {
 			doubleDirect = loadPointers(address);
 		}
 		else {
 			doubleDirect = new int[Disk.SectorSize / 4];
 		}
 		
-		int firstSingleIndirect = from / (Disk.SectorSize / 4);
-		
-		for (int i = firstSingleIndirect; i < Disk.SectorSize / 4; i++) {
-			int singleFrom = from - from / (Disk.SectorSize / 4);
-			int singleAmount = min(amount, Disk.SectorSize / 4 - singleFrom);
-			if (singleFrom == 0) {
+		int firstSingleIndirect = pos / (Disk.SectorSize / 4);
+		int countDown = amount;
+		for (int i = firstSingleIndirect; i < doubleDirect.length; i++) {
+			if (pos % (Disk.SectorSize / 4) == 0) {
 				doubleDirect[i] = FilesysKernel.realFileSystem.getFreeList().allocate();
 			}
-			allocSingleIndirect(doubleDirect[i], singleFrom, singleAmount);
-			amount -= singleAmount;
-			from += singleAmount;
-			if (amount == 0)
+			int alloc = allocSingleIndirect(doubleDirect[i], pos % (Disk.SectorSize / 4), countDown);
+			countDown -= alloc;
+			pos += alloc;
+			if (countDown == 0)
 				break;
 		}
 		savePointers(address, doubleDirect);
+		return amount - countDown; 
 	}
 	
 	/** change the file size and adjust the content in the inode accordingly */
 	public void setFileSize(int size) {
 		if (size > (INode.DIRECT_NUM + Disk.SectorSize / 4 + (Disk.SectorSize / 4) * (Disk.SectorSize / 4)) * Disk.SectorSize) {
-			System.out.println("File too large");
+			Lib.debug('f',"File too large");
 			size = (INode.DIRECT_NUM + Disk.SectorSize / 4 + (Disk.SectorSize / 4) * (Disk.SectorSize / 4)) * Disk.SectorSize;
 		}
 		int oldSize = file_size;
@@ -371,7 +374,7 @@ public class INode {
 		if (oldSectors < newSectors) {
 			int alloc = newSectors - oldSectors;
 			if (alloc > 0 && oldSectors < INode.DIRECT_NUM) {
-				for (int i = oldSectors; i < INode.DIRECT_NUM && i < newSectors; i++) {
+				for (int i = oldSectors; i < INode.DIRECT_NUM; i++) {
 					direct[i] = FilesysKernel.realFileSystem.getFreeList().allocate();
 					alloc--;
 					oldSectors++;
@@ -379,75 +382,104 @@ public class INode {
 						break;
 				}
 			}
-			if (alloc > 0 && oldSectors >= INode.DIRECT_NUM && oldSectors < INode.DIRECT_NUM + Disk.SectorSize / 4) {
-				if (singleIndirect == 0) {
+			oldSectors -= INode.DIRECT_NUM;
+			if (alloc > 0 &&  oldSectors < Disk.SectorSize / 4) {
+				if (oldSectors == 0) {
 					singleIndirect = FilesysKernel.realFileSystem.getFreeList().allocate();
 				}
-				int amount = min(alloc, Disk.SectorSize / 4 + INode.DIRECT_NUM - oldSectors);
-				allocSingleIndirect(singleIndirect, oldSectors - INode.DIRECT_NUM, amount);
+				int amount = allocSingleIndirect(singleIndirect, oldSectors, alloc);
 				alloc -= amount;
 				oldSectors += amount;
 			}
-			if (alloc > 0 && oldSectors > INode.DIRECT_NUM + Disk.SectorSize / 4) {
-				if (doubleIndirect == 0) {
+			oldSectors -= Disk.SectorSize / 4;
+			if (alloc > 0 && oldSectors < (Disk.SectorSize / 4) * (Disk.SectorSize / 4)) {
+				if (oldSectors == 0) {
 					doubleIndirect = FilesysKernel.realFileSystem.getFreeList().allocate();
 				}
-				allocDoubleIndirect(doubleIndirect, oldSectors - INode.DIRECT_NUM - Disk.SectorSize / 4, alloc);
+				allocDoubleIndirect(doubleIndirect, oldSectors, alloc);
 			}
 		}
 		else {
-			if (oldSectors > INode.DIRECT_NUM + Disk.SectorSize / 4) {
-				int from = max(0, newSectors - INode.DIRECT_NUM + Disk.SectorSize / 4);
-				freeDoubleIndirect(doubleIndirect, from, oldSectors - INode.DIRECT_NUM + Disk.SectorSize / 4);
-				if (from == 0) {
-					FilesysKernel.realFileSystem.getFreeList().deallocate(doubleIndirect);
-					doubleIndirect = 0;
-				}
-			}
-			
-			if (oldSectors > INode.DIRECT_NUM) {
-				int from = max(0, newSectors - INode.DIRECT_NUM);
-				freeSingleIndirect(singleIndirect, from, min(oldSectors - INode.DIRECT_NUM, Disk.SectorSize / 4));
-				if (from == 0) {
-					FilesysKernel.realFileSystem.getFreeList().deallocate(singleIndirect);
-					singleIndirect = 0;
-				}
-			}
-			
+//			if (oldSectors > INode.DIRECT_NUM + Disk.SectorSize / 4) {
+//				int from = max(0, newSectors - INode.DIRECT_NUM + Disk.SectorSize / 4);
+//				freeDoubleIndirect(doubleIndirect, from, oldSectors - INode.DIRECT_NUM + Disk.SectorSize / 4);
+//				if (from == 0) {
+//					FilesysKernel.realFileSystem.getFreeList().deallocate(doubleIndirect);
+//					doubleIndirect = 0;
+//				}
+//			}
+//			
+//			if (oldSectors > INode.DIRECT_NUM) {
+//				int from = max(0, newSectors - INode.DIRECT_NUM);
+//				freeSingleIndirect(singleIndirect, from, min(oldSectors - INode.DIRECT_NUM, Disk.SectorSize / 4));
+//				if (from == 0) {
+//					FilesysKernel.realFileSystem.getFreeList().deallocate(singleIndirect);
+//					singleIndirect = 0;
+//				}
+//			}
+//			
+//			if (newSectors < INode.DIRECT_NUM) {
+//				for (int i = newSectors; i < min(INode.DIRECT_NUM, oldSectors); i++) {
+//					FilesysKernel.realFileSystem.getFreeList().deallocate(direct[i]);
+//					direct[i] = 0;
+//				}
+//			}
+			int amount = oldSectors - newSectors;
 			if (newSectors < INode.DIRECT_NUM) {
-				for (int i = newSectors; i < min(INode.DIRECT_NUM, oldSectors); i++) {
+				for (int i = newSectors; i < INode.DIRECT_NUM; i++) {
 					FilesysKernel.realFileSystem.getFreeList().deallocate(direct[i]);
-					direct[i] = 0;
+					amount--;
+					newSectors++;
+					if (amount == 0)
+						break;
 				}
+			}
+			newSectors -= INode.DIRECT_NUM;
+			if (newSectors < Disk.SectorSize / 4 && amount > 0) {
+				int release =  freeSingleIndirect(singleIndirect, newSectors, amount);
+				amount -= release;
+				newSectors += release; 
+			}
+			newSectors -= Disk.SectorSize / 4;
+			if (newSectors < (Disk.SectorSize / 4) * (Disk.SectorSize / 4) && amount > 0) {
+				int release = freeDoubleIndirect(doubleIndirect, newSectors, amount);
+				amount -= release;
+				newSectors += release;
 			}
 		}
 	}
 	
-	void freeDoubleIndirect(int address, int from, int to) {
+	int freeDoubleIndirect(int address, int pos, int amount) {
 		int[] doubleDirect = loadPointers(address); 
-		int firstSingleIndirect = from / (Disk.SectorSize / 4);
-		int lastSingleIndirect = (to - 1) / (Disk.SectorSize / 4);
-		
-		for(int i = firstSingleIndirect; i <= lastSingleIndirect; i++) {
-			int singleFrom = (i * (Disk.SectorSize / 4) < from)? (from - (i * (Disk.SectorSize / 4))) : 0; 
-			int singleTo = ((i + 1) * (Disk.SectorSize / 4) <= to)? (Disk.SectorSize / 4) : (to - (i * (Disk.SectorSize / 4))); 
-			freeSingleIndirect(doubleDirect[i], singleFrom, singleTo);
-			if (from == 0) {
+		int firstSingleIndirect = pos / (Disk.SectorSize / 4);
+		int countDown = amount;
+		for(int i = firstSingleIndirect; i < doubleDirect.length; i++) {
+			int release = freeSingleIndirect(doubleDirect[i], pos % (Disk.SectorSize / 4), countDown);
+			countDown -= release;
+			pos += release;
+			if (pos % (Disk.SectorSize / 4) == 0) {
 				FilesysKernel.realFileSystem.getFreeList().deallocate(doubleDirect[i]);
 				doubleDirect[i] = 0;
 			}
+			if (countDown == 0)
+				break;
 		}
 		savePointers(address, doubleDirect);
+		return amount - countDown;
 	}
 	
-	void freeSingleIndirect(int address, int from, int to) {
+	int freeSingleIndirect(int address, int pos, int amount) {
 		int[] singleDirect = loadPointers(address);
-		for (int i = from; i < to; i ++) {
+		if (pos + amount > Disk.SectorSize / 4) {
+			amount = Disk.SectorSize - pos;
+		}
+		for (int i = pos; i < pos + amount; i ++) {
 			FilesysKernel.realFileSystem.getFreeList().deallocate(singleDirect[i]);
 		}
-		if (from > 0) {
+		if (pos > 0) {
 			savePointers(address, singleDirect);
 		}
+		return amount;
 	}
 	
 	int min(int a, int b) {

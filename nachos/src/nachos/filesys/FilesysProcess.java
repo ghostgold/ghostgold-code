@@ -46,9 +46,21 @@ public class FilesysProcess extends VMProcess {
 				return -1;
 			}
 			return -1;
-		case SYSCALL_GETCWD: {
-		}
-
+		case SYSCALL_GETCWD: 
+			try {
+				byte[] buffer = new byte[a1 + 1];
+				int pos = 0;
+				String current = FilesysKernel.realFileSystem.cur_folder;
+				while(pos < current.length() && pos < a1) {
+					buffer[pos] = (byte)current.charAt(pos);
+					pos++;
+				}
+				buffer[pos++] = 0;
+				writeVirtualMemory(a0, buffer, 0, pos);
+				return pos;
+			} catch(Exception e) {
+				return -1;
+			}
 		case SYSCALL_READDIR: {
 		}
 

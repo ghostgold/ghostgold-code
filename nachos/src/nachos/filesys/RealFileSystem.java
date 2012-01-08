@@ -139,7 +139,7 @@ public class RealFileSystem implements FileSystem {
 		else 
 			start = getFolder(cur_folder_address);
 		for (int i = 0; i < path.length - 1; i ++) {
-			if (path[i].equals("."))
+			if (path[i].equals(".") || path[i].equals(""))
 				continue;
 			int newaddr = start.getEntry(path[i]);
 			start.close();
@@ -150,7 +150,7 @@ public class RealFileSystem implements FileSystem {
 			}
 			else return 0;
 		}
-		if (path[path.length - 1].equals("") || path[path.length - 1].equals(".")) {
+		if (path.length == 0 || path[path.length - 1].equals("") || path[path.length - 1].equals(".")) {
 			int addr = start.inode.addr;
 			start.close();
 			return addr;
@@ -249,6 +249,7 @@ public class RealFileSystem implements FileSystem {
 			parent.addEntry(filename, inode.addr);
 			folder.close();
 			parent.close();
+			return true;
 		}
 		return false;
 	}
@@ -295,13 +296,14 @@ public class RealFileSystem implements FileSystem {
 					next = 0;
 			}
 			else 
-				subs[next++] = subs[i];
+				result[next++] = subs[i];
 		}
 		StringBuffer path = new StringBuffer();
-		path.append("/");
 		for (int i =0 ; i < next; i++) {
-			path.append(result[i] + "/");
+			path.append("/" + result[i]);
 		}
+		if (path.length() == 0) 
+			path.append("/");
 		return path.toString();
 	}
 	public boolean changeCurFolder(String name) {
