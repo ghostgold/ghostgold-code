@@ -31,8 +31,7 @@ public class VMKernel extends UserKernel {
 		VMProcess.emptySwapPage = new LinkedList<Integer>();
 		VMProcess.globalPageTable = new InvertedPageTable();
 		VMProcess.swapTable = new HashMap<VirtualPagePair, Integer>();
-		VMProcess.swapFile = VMKernel.fileSystem.open(VMProcess.swapFileName, true);
-		Lib.assertTrue(VMProcess.swapFile != null, "Virtual Memory Initialization Failed");
+		
 		VMProcess.totalSwapPage = 0;
 		VMProcess.tlbSize = Machine.processor().getTLBSize();
 	}
@@ -48,6 +47,7 @@ public class VMKernel extends UserKernel {
 	 * Start running user programs.
 	 */
 	public void run() {
+		VMProcess.swapFile = VMKernel.fileSystem.open(VMProcess.swapFileName, true);
 		super.run();
 	}
 

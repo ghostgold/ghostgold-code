@@ -297,7 +297,7 @@ public class VMProcess extends UserProcess {
 		TranslationEntry result = globalPageTable.getPhyPage(query);
 		if (result == null){
 			numberOfPageFault++;
-			swapTableLock.acquire();			
+			//swapTableLock.acquire();			
 			int ppn = getFreePage();
 			result = new TranslationEntry(pageNum, ppn, true, false, false, false);
 			globalPageTable.insert(query, result);
@@ -311,7 +311,7 @@ public class VMProcess extends UserProcess {
 					loadPage(ppn, pageNum, result);
 				}
 			}
-			swapTableLock.release();
+			//swapTableLock.release();
 		}
 		//pageTableLock.release();
 		return result;

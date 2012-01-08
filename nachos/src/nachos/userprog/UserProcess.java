@@ -752,7 +752,7 @@ public class UserProcess {
 	/** The number of pages in the program's stack. */
 	protected final int stackPages = Config.getInteger("Processor.numStackPages", 8);
 	
-	private static final int maxFilenameLength = 256;
+	public static final int maxFilenameLength = 256;
 	private static final int maxStringArgumentLength = 256;
 	protected final int maxFileOpened = 32;
 	/** File descriptor table*/
