@@ -22,7 +22,7 @@ public class Folder  {
 	INode inode;
 	Lock lock;
 	/** mapping from filename to folder entry */
-	private Hashtable<String, FolderEntry> entry;
+	Hashtable<String, FolderEntry> entry;
 
 	public Folder(INode inode) {
 		size = 4;

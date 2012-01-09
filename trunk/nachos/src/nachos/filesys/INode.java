@@ -68,42 +68,11 @@ public class INode {
 	}
 
 	/** get the sector number of a position in the file */
-//	public int getSector(int pos) {
-//		if (pos >= file_size)
-//			return 0;
-//		if (pos < INode.DIRECT_NUM * Disk.SectorSize)
-//			return direct[pos / Disk.SectorSize];
-//		pos -= INode.DIRECT_NUM * Disk.SectorSize;
-//		if (pos < (Disk.SectorSize / 4) * Disk.SectorSize) {
-//			int[] singleDirect = loadPointers(singleIndirect);
-//			return singleDirect[pos / Disk.SectorSize];
-//		}
-//		pos -= (Disk.SectorSize / 4) * Disk.SectorSize;
-//		int[] doubleDirect = loadPointers(doubleIndirect);
-//		for (int i = 0; i < Disk.SectorSize / 4; i++) { 
-//			if (pos < (Disk.SectorSize / 4) * Disk.SectorSize) {
-//				int[] singleDirect = loadPointers(doubleDirect[i]);
-//				return singleDirect[pos / Disk.SectorSize];
-//			}
-//			pos -= (Disk.SectorSize / 4) * Disk.SectorSize;
-//		}
-//		return 0;
-//	}
+
 
 	public int read(int pos, byte[] buffer, int start, int limit) {
 		if (pos + limit > file_size)
 			limit = file_size - pos;
-//		int firstSector = pos / Disk.SectorSize;
-//		int lastSector = (pos + limit - 1) / Disk.SectorSize;
-//		byte[] tmp = new byte[(lastSector - firstSector + 1) * Disk.SectorSize];
-//		for (int i = firstSector; i <= lastSector; i++ ) {
-//			int sectorNum = getSector(i * Disk.SectorSize );
-//			if (sectorNum < 2)
-//				System.out.println("Wrong sector number");
-//			FilesysKernel.disk.readSector(sectorNum, tmp, (i - firstSector) * Disk.SectorSize);
-//		}
-//		System.arraycopy(tmp, pos - firstSector * Disk.SectorSize, buffer, start, limit);
-//		return limit;
 		int countDown = limit;
 		if (pos < Disk.SectorSize * INode.DIRECT_NUM && countDown > 0) {
 			int firstSector = pos / Disk.SectorSize;
@@ -189,30 +158,6 @@ public class INode {
 			setFileSize(pos + limit);
 			limit = min(limit, file_size - pos);
 		}
-//		int firstSector = pos / Disk.SectorSize;
-//		int lastSector = (pos + limit - 1) / Disk.SectorSize;
-//		byte[] result = new byte[(lastSector - firstSector + 1) * Disk.SectorSize];
-//		System.arraycopy(buffer, start, result, pos - firstSector * Disk.SectorSize, limit);
-//		
-//		byte[] tmp = new byte[Disk.SectorSize];
-//		
-//		int sectorNum = getSector(firstSector * Disk.SectorSize);
-//		FilesysKernel.disk.readSector(sectorNum, tmp, 0);
-//		System.arraycopy(tmp, 0, result, 0, pos - firstSector * Disk.SectorSize);
-//		
-//		sectorNum = getSector(lastSector * Disk.SectorSize);
-//		FilesysKernel.disk.readSector(sectorNum, tmp, 0);
-//		int copyFrom = pos + limit - lastSector * Disk.SectorSize;
-//		if (copyFrom < Disk.SectorSize)
-//			System.arraycopy(tmp, copyFrom , result, pos + limit - firstSector * Disk.SectorSize, Disk.SectorSize - copyFrom);
-//
-//		for (int i = firstSector; i <= lastSector; i ++) {
-//			sectorNum = getSector(i * Disk.SectorSize);
-//			if (sectorNum < 2)
-//				System.out.println("Wrong sector number");
-//			FilesysKernel.disk.writeSector(sectorNum, result, (i - firstSector) * Disk.SectorSize);
-//		}
-//		return limit;
 		int countDown = limit;
 		if (pos < Disk.SectorSize * INode.DIRECT_NUM && countDown > 0) {
 			int firstSector = pos / Disk.SectorSize;
@@ -400,30 +345,6 @@ public class INode {
 			}
 		}
 		else {
-//			if (oldSectors > INode.DIRECT_NUM + Disk.SectorSize / 4) {
-//				int from = max(0, newSectors - INode.DIRECT_NUM + Disk.SectorSize / 4);
-//				freeDoubleIndirect(doubleIndirect, from, oldSectors - INode.DIRECT_NUM + Disk.SectorSize / 4);
-//				if (from == 0) {
-//					FilesysKernel.realFileSystem.getFreeList().deallocate(doubleIndirect);
-//					doubleIndirect = 0;
-//				}
-//			}
-//			
-//			if (oldSectors > INode.DIRECT_NUM) {
-//				int from = max(0, newSectors - INode.DIRECT_NUM);
-//				freeSingleIndirect(singleIndirect, from, min(oldSectors - INode.DIRECT_NUM, Disk.SectorSize / 4));
-//				if (from == 0) {
-//					FilesysKernel.realFileSystem.getFreeList().deallocate(singleIndirect);
-//					singleIndirect = 0;
-//				}
-//			}
-//			
-//			if (newSectors < INode.DIRECT_NUM) {
-//				for (int i = newSectors; i < min(INode.DIRECT_NUM, oldSectors); i++) {
-//					FilesysKernel.realFileSystem.getFreeList().deallocate(direct[i]);
-//					direct[i] = 0;
-//				}
-//			}
 			int amount = oldSectors - newSectors;
 			if (newSectors < INode.DIRECT_NUM) {
 				for (int i = newSectors; i < INode.DIRECT_NUM; i++) {

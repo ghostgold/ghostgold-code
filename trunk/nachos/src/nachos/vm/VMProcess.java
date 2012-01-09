@@ -148,7 +148,7 @@ public class VMProcess extends UserProcess {
 	 */
 	public void restoreState() {
 		for (int i = 0; i < tlbSize; i++) {
-			if (tlb[i].valid && globalPageTable.getPhyPage(new VirtualPagePair(tlb[i].vpn, pid)) != null) {
+			if (tlb[i].valid && globalPageTable.getPhyPage(new VirtualPagePair(tlb[i].vpn, pid)) != null && pageTableLock.isHeldByCurrentThread()) {
 				Machine.processor().writeTLBEntry(i, globalPageTable.getPhyPage(new VirtualPagePair(tlb[i].vpn, pid)));
 			}
 			else 
@@ -260,7 +260,7 @@ public class VMProcess extends UserProcess {
 	@Override
 	protected void unloadSections() {
 		pageTableLock.acquire();
-		//swapTableLock.acquire();
+		swapTableLock.acquire();
 		for (int i = 0; i < numPages; i++) {
 			VirtualPagePair query = new VirtualPagePair(i, pid);
 			TranslationEntry translation = globalPageTable.getPhyPage(query);
@@ -275,7 +275,7 @@ public class VMProcess extends UserProcess {
 		for (int i = 0; i < tlbSize; i++) {
 			Machine.processor().writeTLBEntry(i, new TranslationEntry());
 		}
-		//swapTableLock.release();
+		swapTableLock.release();
 		pageTableLock.release();
 		for (int i = 0; i < maxFileOpened; i++) 
 			if (fileTable[i] != null)
