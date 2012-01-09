@@ -1,7 +1,9 @@
 package nachos.filesys;
 
+import nachos.machine.Lib;
 import nachos.machine.Machine;
 import nachos.machine.Processor;
+import nachos.userprog.UserProcess;
 import nachos.vm.VMProcess;
 
 /**
@@ -64,14 +66,51 @@ public class FilesysProcess extends VMProcess {
 		case SYSCALL_READDIR: {
 		}
 
-		case SYSCALL_STAT: {
-		}
+		case SYSCALL_STAT:
+			try {
+				FileStat stat = FilesysKernel.realFileSystem.getStat(readVirtualMemoryString(a0, maxFilenameLength));
+				if (stat == null)
+					return -1;
+				byte[] result = new byte[UserProcess.maxFilenameLength + 20];
+				int pos = 0;
+				while (pos < stat.name.length()) {
+					result[pos] = (byte)stat.name.charAt(pos);
+					pos++;
+				}
+				result[pos++] = 0;
+				pos = 256;
+				Lib.bytesFromInt(result, pos, stat.size); 
+				pos += 4;
+				Lib.bytesFromInt(result, pos, stat.sectors); 
+				pos += 4;
+				Lib.bytesFromInt(result, pos, stat.type); 
+				pos += 4;
+				Lib.bytesFromInt(result, pos, stat.inode); 
+				pos += 4;
+				Lib.bytesFromInt(result, pos, stat.links); 
+				pos += 4;
+				writeVirtualMemory(a1, result, 0, pos);
+				return 0;
+			} catch(Exception e) {
+				return -1;
+			}
+		case SYSCALL_LINK: 
+			try {
+				if (FilesysKernel.realFileSystem.createLink(readVirtualMemoryString(a0, maxFilenameLength), readVirtualMemoryString(a1, maxFilenameLength)))
+					return 0;
+			} catch(Exception e) {
+				return -1;
+			}
+			return -1;
+		case SYSCALL_SYMLINK: 
+			try {
+				if (FilesysKernel.realFileSystem.createSymlink(readVirtualMemoryString(a0, maxFilenameLength), readVirtualMemoryString(a1, maxFilenameLength)))
+					return 0;
+			} catch(Exception e) {
+				return -1;
+			}
+			return -1;
 
-		case SYSCALL_LINK: {
-		}
-
-		case SYSCALL_SYMLINK: {
-		}
 
 		default:
 			return super.handleSyscall(syscall, a0, a1, a2, a3);
