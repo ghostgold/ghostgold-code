@@ -668,6 +668,7 @@ public class UserProcess {
 				
 				file.close();
 				fileTable[a0] = null;
+				return 0;
 			} catch (Exception e) {
 				Lib.debug('S', e.toString());
 				return -1;

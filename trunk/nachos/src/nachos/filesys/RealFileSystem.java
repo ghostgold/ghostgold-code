@@ -269,8 +269,10 @@ public class RealFileSystem implements FileSystem {
 		if (parent == null)
 			return false;
 		int fileAddress = parent.getEntry(getFilename(name));
-		if (fileAddress == 0)
+		if (fileAddress == 0) {
+			parent.close();
 			return false;
+		}
 		INode inode = getINode(fileAddress);
 		if (inode.file_type == INode.TYPE_SYMLINK) {
 			inode.link_count--;
@@ -327,8 +329,10 @@ public class RealFileSystem implements FileSystem {
 			return false;
 		}
 		int folderAddress = parent.getEntry(filename);
-		if (folderAddress == 0)
+		if (folderAddress == 0) {
+			parent.close();
 			return false;
+		}
 		INode inode = getINode(folderAddress);
 		if (inode.file_type == INode.TYPE_SYMLINK) {
 			inode.link_count--;
@@ -395,6 +399,7 @@ public class RealFileSystem implements FileSystem {
 				cur_folder = makePath(cur_folder, name);
 			Folder folder = getFolder(newaddr);
 			if(folder != null) {
+				folder.close();
 				cur_folder_address = newaddr; 
 				return true;
 			}
@@ -460,6 +465,7 @@ public class RealFileSystem implements FileSystem {
 		}
 		
 		if (namei(src) == 0) {
+			folder.close();
 			return false;
 		}
 		
@@ -477,15 +483,16 @@ public class RealFileSystem implements FileSystem {
 		inode.save();
 		folder.addEntry(getFilename(dst), inode.addr);
 		folder.save();
+		folder.close();
 		return true;
 	}
 
 	public int getSwapFileSectors() {
-		return 0;
+		return this.calcSectors(getINode(namei("/SWAP")).file_size);
 	}
 
 	public int getFreeSize() {
-		return 0;
+		return free_list.free_list.size();
 	}
 	
 }
