@@ -373,32 +373,41 @@ public class INode {
 	int freeDoubleIndirect(int address, int pos, int amount) {
 		int[] doubleDirect = loadPointers(address); 
 		int firstSingleIndirect = pos / (Disk.SectorSize / 4);
+		int initialPos = pos;
 		int countDown = amount;
 		for(int i = firstSingleIndirect; i < doubleDirect.length; i++) {
 			int release = freeSingleIndirect(doubleDirect[i], pos % (Disk.SectorSize / 4), countDown);
 			countDown -= release;
 			pos += release;
 			if (pos % (Disk.SectorSize / 4) == 0) {
-				FilesysKernel.realFileSystem.getFreeList().deallocate(doubleDirect[i]);
+				//FilesysKernel.realFileSystem.getFreeList().deallocate(doubleDirect[i]);
 				doubleDirect[i] = 0;
 			}
 			if (countDown == 0)
 				break;
 		}
-		savePointers(address, doubleDirect);
+		if (initialPos > 0) {
+			savePointers(address, doubleDirect);
+		}
+		else {
+			FilesysKernel.realFileSystem.getFreeList().deallocate(address);
+		}
 		return amount - countDown;
 	}
 	
 	int freeSingleIndirect(int address, int pos, int amount) {
 		int[] singleDirect = loadPointers(address);
 		if (pos + amount > Disk.SectorSize / 4) {
-			amount = Disk.SectorSize - pos;
+			amount = Disk.SectorSize / 4 - pos;
 		}
 		for (int i = pos; i < pos + amount; i ++) {
 			FilesysKernel.realFileSystem.getFreeList().deallocate(singleDirect[i]);
 		}
 		if (pos > 0) {
 			savePointers(address, singleDirect);
+		}
+		else {
+			FilesysKernel.realFileSystem.getFreeList().deallocate(address);
 		}
 		return amount;
 	}

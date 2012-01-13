@@ -9,7 +9,7 @@ public class LockedFile {
 	
 	public LockedFile(INode inode) {
 		this.inode = inode;
-		useCount = 1;
+		useCount = 0;
 	}
 	public int read(int pos, byte[] buffer, int start, int limit) {
 		lock.acquire();

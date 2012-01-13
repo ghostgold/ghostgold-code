@@ -22,7 +22,7 @@ public class FreeList {
 	static int size = Lib.divRoundUp(Disk.NumSectors, 8);
 
 	/** maintain address of all the free sectors */
-	private LinkedList<Integer> free_list;
+	LinkedList<Integer> free_list;
 
 	INode inode;
 	
